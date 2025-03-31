@@ -1,6 +1,6 @@
 {
   "name": "n8n-nodes-gemini-search",
-  "version": "1.0.12",
+  "version": "1.0.13",
   "description": "n8n nodes to interact with Google Gemini API for search and content generation",
   "keywords": [
     "n8n-community-node-package",
@@ -50,8 +50,11 @@
     "@types/request-promise-native": "^1.0.18",
     "gulp": "^4.0.2",
     "n8n-core": "^0.125.0",
-    "n8n-workflow": "^0.107.0",
+    "n8n-workflow": "*",
     "prettier": "^2.7.1",
     "typescript": "~4.8.4"
-  }
+  },
+  "peerDependencies": {
+		"n8n-workflow": "*"
+	}
 }

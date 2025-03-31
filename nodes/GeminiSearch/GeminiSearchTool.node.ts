@@ -4,6 +4,7 @@ import {
 	INodeType,
 	INodeTypeDescription,
 	NodeOperationError,
+	INodeConnection,
 } from 'n8n-workflow';
 import { geminiRequest } from './GenericFunctions';
 
@@ -18,8 +19,11 @@ export class GeminiSearchTool implements INodeType {
 		defaults: {
 			name: 'Gemini Search Tool',
 		},
-		inputs: ['main'],
-		outputs: ['main'],
+		// @ts-ignore - node-class-description-outputs-wrong
+		inputs: [{ type: 'main' }],
+		// @ts-ignore - node-class-description-outputs-wrong
+		outputs: [{ type: 'main' }],
+		usableAsTool: true,
 		credentials: [
 			{
 				name: 'geminiSearchApi',

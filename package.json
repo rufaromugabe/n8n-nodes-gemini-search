@@ -39,7 +39,11 @@
     "nodes": [
       "dist/nodes/GeminiSearch/GeminiSearch.node.js",
       "dist/nodes/GeminiSearch/GeminiSearchTool.node.js"
-    ]
+    ],
+    "icons": {
+      "GeminiSearch": "./nodes/GeminiSearch/gemini.svg",
+      "GeminiSearchTool": "./nodes/GeminiSearch/gemini.svg"
+    }
   },
   "devDependencies": {
     "@types/express": "^4.17.14",

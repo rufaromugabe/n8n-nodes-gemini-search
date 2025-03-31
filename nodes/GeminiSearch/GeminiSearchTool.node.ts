@@ -56,6 +56,11 @@ export class GeminiSearchTool implements INodeType {
 						name: 'Gemini 2.0 Pro',
 						value: 'gemini-2.0-pro',
 					},
+					{
+						name: 'Gemini 2.5 Pro',
+						value: 'gemini-2.5-pro',
+					},
+					
 				],
 				default: 'gemini-2.0-flash',
 				description: 'The Gemini model to use',

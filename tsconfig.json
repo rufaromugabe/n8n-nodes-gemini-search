@@ -12,7 +12,8 @@
     "noImplicitReturns": true,
     "sourceMap": true,
     "outDir": "./dist/",
-    "esModuleInterop": true
+    "esModuleInterop": true,
+    "declaration": true
   },
   "include": ["nodes/**/*", "credentials/**/*"],
   "exclude": ["node_modules/**/*", "**/*.spec.ts"]

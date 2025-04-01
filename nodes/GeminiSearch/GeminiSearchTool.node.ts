@@ -112,6 +112,13 @@ export class GeminiSearchTool implements INodeType {
 						default: '',
 						description: 'Override the default system instruction',
 					},
+					{
+						displayName: 'Return Full Response',
+						name: 'returnFullResponse',
+						type: 'boolean',
+						default: false,
+						description: 'Whether to return the full API response',
+					},
 				],
 			},
 		],
@@ -130,6 +137,7 @@ export class GeminiSearchTool implements INodeType {
 					temperature?: number;
 					maxOutputTokens?: number;
 					systemInstruction?: string;
+					returnFullResponse?: boolean;
 				};
 
 				let systemInstruction = options.systemInstruction || '';
@@ -175,12 +183,23 @@ export class GeminiSearchTool implements INodeType {
 
 				const response = await geminiRequest.call(this, model, requestBody);
 
+				const outputData: {
+					result: string;
+					query: string;
+					organization: string;
+					fullResponse?: any;
+				} = {
+					result: response.candidates?.[0]?.content?.parts?.[0]?.text || '',
+					query,
+					organization,
+				};
+
+				if (options.returnFullResponse) {
+					outputData.fullResponse = response;
+				}
+
 				returnData.push({
-					json: {
-						result: response.candidates?.[0]?.content?.parts?.[0]?.text || '',
-						query,
-						organization,
-					},
+					json: outputData,
 					pairedItem: { item: i },
 				});
 			} catch (error) {

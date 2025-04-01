@@ -255,7 +255,7 @@ export class GeminiSearch implements INodeType {
 					if (restrictUrls) {
 						const urlList = restrictUrls.split(',').map(url => url.trim()).filter(url => url !== '');
 						if (urlList.length > 0) {
-							requestBody.tools[0].googleSearch.includeSites = urlList;
+				
 							
 							// Add URL context to system instruction if it exists
 							if (systemInstruction) {

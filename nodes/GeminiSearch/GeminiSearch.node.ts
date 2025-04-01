@@ -7,6 +7,7 @@ import {
 } from 'n8n-workflow';
 import { geminiRequest } from './GenericFunctions';
 import axios from 'axios';
+import { buildSystemInstruction } from './instructionBuilder';
 
 export class GeminiSearch implements INodeType {
 	description: INodeTypeDescription = {
@@ -212,16 +213,15 @@ export class GeminiSearch implements INodeType {
 					extractSourceUrl?: boolean;
 				};
 
-				let systemInstruction = this.getNodeParameter('systemInstruction', i, '') as string;
+				const systemInstruction = this.getNodeParameter('systemInstruction', i, '') as string;
+				const organization = operation === 'webSearch' ? this.getNodeParameter('organization', i, '') as string : '';
+				const restrictUrls = operation === 'webSearch' ? this.getNodeParameter('restrictUrls', i, '') as string : '';
 				
-				if (operation === 'webSearch') {
-					const organization = this.getNodeParameter('organization', i, '') as string;
-					const restrictUrls = this.getNodeParameter('restrictUrls', i, '') as string;
-					
-					if (organization && !systemInstruction) {
-						systemInstruction = `You are an expert in retrieving and providing information strictly within the domain of ${organization} and topics directly related to this organization. When answering queries, provide only the most relevant and natural response without unnecessary related information. Do not list multiple similar names, be strict on names or unrelated details. If a query falls outside this scope, politely inform the user that you are limited to ${organization}-related topics. Your response should answer the question directly without saying 'based on search'.`;
-					}
-				}
+				const finalSystemInstruction = buildSystemInstruction({
+					systemInstruction,
+					organization,
+					restrictUrls,
+				});
 
 				const requestBody: any = {
 					contents: [
@@ -249,29 +249,13 @@ export class GeminiSearch implements INodeType {
 							googleSearch: {},
 						},
 					];
-					
-					// Add URL restriction if specified
-					const restrictUrls = this.getNodeParameter('restrictUrls', i, '') as string;
-					if (restrictUrls) {
-						const urlList = restrictUrls.split(',').map(url => url.trim()).filter(url => url !== '');
-						if (urlList.length > 0) {
-				
-							
-							// Add URL context to system instruction if it exists
-							if (systemInstruction) {
-								systemInstruction += ` Limit your search to information found on these specific websites: ${urlList.join(', ')}.`;
-							} else {
-								systemInstruction = `Limit your search to information found on these specific websites: ${urlList.join(', ')}. Provide a direct, concise answer based on information from these sources only.`;
-							}
-						}
-					}
 				}
 
-				if (systemInstruction) {
+				if (finalSystemInstruction) {
 					requestBody.systemInstruction = {
 						parts: [
 							{
-								text: systemInstruction,
+								text: finalSystemInstruction,
 							},
 						],
 					};

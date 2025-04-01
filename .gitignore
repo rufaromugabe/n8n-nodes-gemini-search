@@ -38,3 +38,6 @@ logs/
 # Optional npm cache & history
 .npm/
 .node_repl_history
+
+# ESLint cache
+.eslintcache

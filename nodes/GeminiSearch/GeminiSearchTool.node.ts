@@ -7,6 +7,7 @@ import {
 	INodeConnection,
 } from 'n8n-workflow';
 import { geminiRequest } from './GenericFunctions';
+import axios from 'axios';
 
 export class GeminiSearchTool implements INodeType {
 	description: INodeTypeDescription = {
@@ -202,11 +203,28 @@ export class GeminiSearchTool implements INodeType {
 						(url.startsWith("http://") || url.startsWith("https://"))) || "";
 				};
 
+				// Function to get final redirected URL
+				const getRedirectedUrl = async (url: string): Promise<string> => {
+					if (!url) return "";
+					
+					try {
+						const response = await axios.get(url, { 
+							maxRedirects: 1,
+							validateStatus: status => status < 400
+						});
+						return response.request.res.responseUrl || url;
+					} catch (error) {
+						// If there's an error, return the original URL
+						return url;
+					}
+				};
+
 				const outputData: {
 					result: string;
 					query: string;
 					organization: string;
 					sourceUrl?: string;
+					redirectedSourceUrl?: string;
 					fullResponse?: any;
 				} = {
 					result: response.candidates?.[0]?.content?.parts?.[0]?.text || '',
@@ -215,7 +233,17 @@ export class GeminiSearchTool implements INodeType {
 				};
 
 				if (options.extractSourceUrl) {
-					outputData.sourceUrl = extractSourceUrl(response);
+					const sourceUrl = extractSourceUrl(response);
+					outputData.sourceUrl = sourceUrl;
+					
+					// Get redirected URL if source URL exists
+					if (sourceUrl) {
+						try {
+							outputData.redirectedSourceUrl = await getRedirectedUrl(sourceUrl);
+						} catch (error) {
+							outputData.redirectedSourceUrl = sourceUrl;
+						}
+					}
 				}
 
 				if (options.returnFullResponse) {

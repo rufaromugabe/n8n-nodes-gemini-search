@@ -6,6 +6,7 @@ import {
 	NodeOperationError,
 } from 'n8n-workflow';
 import { geminiRequest } from './GenericFunctions';
+import axios from 'axios';
 
 export class GeminiSearch implements INodeType {
 	description: INodeTypeDescription = {
@@ -257,13 +258,40 @@ export class GeminiSearch implements INodeType {
 						(url.startsWith("http://") || url.startsWith("https://"))) || "";
 				};
 
+				// Function to get final redirected URL
+				const getRedirectedUrl = async (url: string): Promise<string> => {
+					if (!url) return "";
+					
+					try {
+						const response = await axios.get(url, { 
+							maxRedirects: 1,
+							validateStatus: status => status < 400
+						});
+						return response.request.res.responseUrl || url;
+					} catch (error) {
+						// If there's an error, return the original URL
+						return url;
+					}
+				};
+
 				const outputJson: any = {
 					response: response.candidates?.[0]?.content?.parts?.[0]?.text || '',
 					fullResponse: response,
 				};
 
 				if (options.extractSourceUrl) {
-					outputJson.sourceUrl = extractSourceUrl(response);
+					const sourceUrl = extractSourceUrl(response);
+					outputJson.sourceUrl = sourceUrl;
+					
+					// Get redirected URL if source URL exists
+					if (sourceUrl) {
+						try {
+							outputJson.redirectedSourceUrl = await getRedirectedUrl(sourceUrl);
+						} catch (error) {
+							outputJson.redirectedSourceUrl = sourceUrl;
+							outputJson.redirectError = error.message;
+						}
+					}
 				}
 
 				returnData.push({

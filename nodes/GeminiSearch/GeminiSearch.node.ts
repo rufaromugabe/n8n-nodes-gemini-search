@@ -111,6 +111,21 @@ export class GeminiSearch implements INodeType {
 				description: 'Optional organization name to use as context for search',
 			},
 			{
+				displayName: 'Restrict Search to URLs',
+				name: 'restrictUrls',
+				type: 'string',
+				default: '',
+				placeholder: 'example.com,docs.example.com',
+				displayOptions: {
+					show: {
+						operation: [
+							'webSearch',
+						],
+					},
+				},
+				description: 'Optional comma-separated list of URLs to restrict search to',
+			},
+			{
 				displayName: 'System Instruction',
 				name: 'systemInstruction',
 				type: 'string',
@@ -201,6 +216,7 @@ export class GeminiSearch implements INodeType {
 				
 				if (operation === 'webSearch') {
 					const organization = this.getNodeParameter('organization', i, '') as string;
+					const restrictUrls = this.getNodeParameter('restrictUrls', i, '') as string;
 					
 					if (organization && !systemInstruction) {
 						systemInstruction = `You are an expert in retrieving and providing information strictly within the domain of ${organization} and topics directly related to this organization. When answering queries, provide only the most relevant and natural response without unnecessary related information. Do not list multiple similar names, be strict on names or unrelated details. If a query falls outside this scope, politely inform the user that you are limited to ${organization}-related topics. Your response should answer the question directly without saying 'based on search'.`;
@@ -227,6 +243,30 @@ export class GeminiSearch implements INodeType {
 					},
 				};
 
+				if (operation === 'webSearch') {
+					requestBody.tools = [
+						{
+							googleSearch: {},
+						},
+					];
+					
+					// Add URL restriction if specified
+					const restrictUrls = this.getNodeParameter('restrictUrls', i, '') as string;
+					if (restrictUrls) {
+						const urlList = restrictUrls.split(',').map(url => url.trim()).filter(url => url !== '');
+						if (urlList.length > 0) {
+							requestBody.tools[0].googleSearch.includeSites = urlList;
+							
+							// Add URL context to system instruction if it exists
+							if (systemInstruction) {
+								systemInstruction += ` Limit your search to information found on these specific websites: ${urlList.join(', ')}.`;
+							} else {
+								systemInstruction = `Limit your search to information found on these specific websites: ${urlList.join(', ')}. Provide a direct, concise answer based on information from these sources only.`;
+							}
+						}
+					}
+				}
+
 				if (systemInstruction) {
 					requestBody.systemInstruction = {
 						parts: [
@@ -235,14 +275,6 @@ export class GeminiSearch implements INodeType {
 							},
 						],
 					};
-				}
-
-				if (operation === 'webSearch') {
-					requestBody.tools = [
-						{
-							googleSearch: {},
-						},
-					];
 				}
 
 				const response = await geminiRequest.call(this, model, requestBody);
@@ -292,6 +324,13 @@ export class GeminiSearch implements INodeType {
 					response: response.candidates?.[0]?.content?.parts?.[0]?.text || '',
 					fullResponse: response,
 				};
+				
+				if (operation === 'webSearch') {
+					const restrictUrls = this.getNodeParameter('restrictUrls', i, '') as string;
+					if (restrictUrls) {
+						outputJson.restrictedUrls = restrictUrls;
+					}
+				}
 
 				if (options.extractSourceUrl) {
 					const sourceUrl = extractSourceUrl(response);

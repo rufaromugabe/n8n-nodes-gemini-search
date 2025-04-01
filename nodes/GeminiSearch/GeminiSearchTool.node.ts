@@ -78,6 +78,14 @@ export class GeminiSearchTool implements INodeType {
 				description: 'Optional organization name to use as context for search',
 			},
 			{
+				displayName: 'Restrict Search to URLs',
+				name: 'restrictUrls',
+				type: 'string',
+				default: '',
+				placeholder: 'example.com,docs.example.com',
+				description: 'Optional comma-separated list of URLs to restrict search to',
+			},
+			{
 				displayName: 'Options',
 				name: 'options',
 				type: 'collection',
@@ -141,6 +149,7 @@ export class GeminiSearchTool implements INodeType {
 				const query = this.getNodeParameter('query', i) as string;
 				const model = this.getNodeParameter('model', i) as string;
 				const organization = this.getNodeParameter('organization', i, '') as string;
+				const restrictUrls = this.getNodeParameter('restrictUrls', i, '') as string;
 				const options = this.getNodeParameter('options', i, {}) as {
 					temperature?: number;
 					maxOutputTokens?: number;
@@ -179,6 +188,21 @@ export class GeminiSearchTool implements INodeType {
 						},
 					],
 				};
+
+				// Add URL restriction if specified
+				if (restrictUrls) {
+					const urlList = restrictUrls.split(',').map(url => url.trim()).filter(url => url !== '');
+					if (urlList.length > 0) {
+						requestBody.tools[0].googleSearch.includeSites = urlList;
+						
+						// Add URL context to system instruction if it exists
+						if (systemInstruction) {
+							systemInstruction += ` Limit your search to information found on these specific websites: ${urlList.join(', ')}.`;
+						} else {
+							systemInstruction = `Limit your search to information found on these specific websites: ${urlList.join(', ')}. Provide a direct, concise answer based on information from these sources only.`;
+						}
+					}
+				}
 
 				if (systemInstruction) {
 					requestBody.systemInstruction = {
@@ -237,6 +261,7 @@ export class GeminiSearchTool implements INodeType {
 					result: string;
 					query: string;
 					organization: string;
+					restrictedUrls?: string;
 					sourceUrl?: string;
 					redirectedSourceUrl?: string;
 					fullResponse?: any;
@@ -244,6 +269,7 @@ export class GeminiSearchTool implements INodeType {
 					result: response.candidates?.[0]?.content?.parts?.[0]?.text || '',
 					query,
 					organization,
+					restrictedUrls: restrictUrls || undefined,
 				};
 
 				if (options.extractSourceUrl) {

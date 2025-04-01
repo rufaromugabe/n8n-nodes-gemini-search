@@ -167,6 +167,13 @@ export class GeminiSearch implements INodeType {
 						default: 1,
 						description: 'Top K sampling parameter',
 					},
+					{
+						displayName: 'Extract Source URL',
+						name: 'extractSourceUrl',
+						type: 'boolean',
+						default: false,
+						description: 'Whether to extract the source URL from the response',
+					},
 				],
 			},
 		],
@@ -186,6 +193,7 @@ export class GeminiSearch implements INodeType {
 					maxOutputTokens?: number;
 					topP?: number;
 					topK?: number;
+					extractSourceUrl?: boolean;
 				};
 
 				let systemInstruction = this.getNodeParameter('systemInstruction', i, '') as string;
@@ -238,11 +246,28 @@ export class GeminiSearch implements INodeType {
 
 				const response = await geminiRequest.call(this, model, requestBody);
 
+				// Function to extract source URL from groundingMetadata
+				const extractSourceUrl = (responseObj: any): string => {
+					const possiblePaths = [
+						responseObj?.candidates?.[0]?.groundingMetadata?.groundingChunks?.[0]?.web?.uri
+					];
+					
+					// Return the first valid URL
+					return possiblePaths.find(url => typeof url === "string" && 
+						(url.startsWith("http://") || url.startsWith("https://"))) || "";
+				};
+
+				const outputJson: any = {
+					response: response.candidates?.[0]?.content?.parts?.[0]?.text || '',
+					fullResponse: response,
+				};
+
+				if (options.extractSourceUrl) {
+					outputJson.sourceUrl = extractSourceUrl(response);
+				}
+
 				returnData.push({
-					json: {
-						response: response.candidates?.[0]?.content?.parts?.[0]?.text || '',
-						fullResponse: response,
-					},
+					json: outputJson,
 					pairedItem: { item: i },
 				});
 			} catch (error) {

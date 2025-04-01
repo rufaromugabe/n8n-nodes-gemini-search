@@ -119,6 +119,13 @@ export class GeminiSearchTool implements INodeType {
 						default: false,
 						description: 'Whether to return the full API response',
 					},
+					{
+						displayName: 'Extract Source URL',
+						name: 'extractSourceUrl',
+						type: 'boolean',
+						default: false,
+						description: 'Whether to extract the source URL from the response',
+					},
 				],
 			},
 		],
@@ -138,6 +145,7 @@ export class GeminiSearchTool implements INodeType {
 					maxOutputTokens?: number;
 					systemInstruction?: string;
 					returnFullResponse?: boolean;
+					extractSourceUrl?: boolean;
 				};
 
 				let systemInstruction = options.systemInstruction || '';
@@ -183,16 +191,32 @@ export class GeminiSearchTool implements INodeType {
 
 				const response = await geminiRequest.call(this, model, requestBody);
 
+				// Function to extract source URL from groundingMetadata
+				const extractSourceUrl = (responseObj: any): string => {
+					const possiblePaths = [
+						responseObj?.candidates?.[0]?.groundingMetadata?.groundingChunks?.[0]?.web?.uri
+					];
+					
+					// Return the first valid URL
+					return possiblePaths.find(url => typeof url === "string" && 
+						(url.startsWith("http://") || url.startsWith("https://"))) || "";
+				};
+
 				const outputData: {
 					result: string;
 					query: string;
 					organization: string;
+					sourceUrl?: string;
 					fullResponse?: any;
 				} = {
 					result: response.candidates?.[0]?.content?.parts?.[0]?.text || '',
 					query,
 					organization,
 				};
+
+				if (options.extractSourceUrl) {
+					outputData.sourceUrl = extractSourceUrl(response);
+				}
 
 				if (options.returnFullResponse) {
 					outputData.fullResponse = response;

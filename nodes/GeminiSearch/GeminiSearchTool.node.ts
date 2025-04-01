@@ -208,13 +208,27 @@ export class GeminiSearchTool implements INodeType {
 					if (!url) return "";
 					
 					try {
-						const response = await axios.get(url, { 
-							maxRedirects: 5,
-							validateStatus: status => status < 400
+						const response = await axios.head(url, { 
+							maxRedirects: 10,
+							timeout: 5000,
+							validateStatus: null, // Don't throw on any status code
+							headers: {
+								'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
+							}
 						});
-						return response.request.res.responseUrl || url;
+						
+						// Check for the final URL in multiple places
+						const finalUrl = 
+							response.request?.res?.responseUrl || // Node.js response
+							response.request?.responseURL ||      // Browser response
+							(typeof response.request === 'object' && 'res' in response.request ? 
+								response.request.res.headers?.location : null) || // Check location header
+							url; // Fallback to original URL
+							
+						return finalUrl;
 					} catch (error) {
-						// If there's an error, return the original URL
+						// Return more error details for debugging
+						console.error(`Error fetching redirected URL: ${error.message}`);
 						return url;
 					}
 				};

@@ -264,7 +264,7 @@ export class GeminiSearch implements INodeType {
 					
 					try {
 						const response = await axios.get(url, { 
-							maxRedirects: 1,
+							maxRedirects: 5,
 							validateStatus: status => status < 400
 						});
 						return response.request.res.responseUrl || url;

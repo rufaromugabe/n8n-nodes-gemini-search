@@ -44,25 +44,53 @@ export class GeminiSearchTool implements INodeType {
         name: 'model',
         type: 'options',
         options: [
-          {
-            name: 'Gemini 1.0 Pro',
-            value: 'gemini-1.0-pro',
+        {
+            name: 'Gemini 2.5 Flash Preview 04-17',
+            value: 'gemini-2.5-flash-preview-04-17',
           },
           {
-            name: 'Gemini 1.5 Pro',
-            value: 'gemini-1.5-pro',
+            name: 'Gemini 2.5 Pro Preview',
+            value: 'gemini-2.5-pro-preview-05-06',
           },
           {
             name: 'Gemini 2.0 Flash',
             value: 'gemini-2.0-flash',
           },
           {
-            name: 'Gemini 2.0 Pro',
-            value: 'gemini-2.0-pro',
+            name: 'Gemini 2.0 Flash Preview Image Generation',
+            value: 'gemini-2.0-flash-preview-image-generation',
           },
           {
-            name: 'Gemini 2.5 Pro',
-            value: 'gemini-2.5-pro',
+            name: 'Gemini 2.0 Flash-Lite',
+            value: 'gemini-2.0-flash-lite',
+          },
+          {
+            name: 'Gemini 1.5 Flash',
+            value: 'gemini-1.5-flash',
+          },
+          {
+            name: 'Gemini 1.5 Flash-8B',
+            value: 'gemini-1.5-flash-8b',
+          },
+          {
+            name: 'Gemini 1.5 Pro',
+            value: 'gemini-1.5-pro',
+          },
+          {
+            name: 'Gemini Embedding',
+            value: 'gemini-embedding-exp',
+          },
+           {
+            name: 'Imagen 3',
+            value: 'imagen-3.0-generate-002',
+          },
+           {
+            name: 'Veo 2',
+            value: 'veo-2.0-generate-001',
+          },
+           {
+            name: 'Gemini 2.0 Flash Live',
+            value: 'gemini-2.0-flash-live-001',
           },
         ],
         default: 'gemini-2.0-flash',

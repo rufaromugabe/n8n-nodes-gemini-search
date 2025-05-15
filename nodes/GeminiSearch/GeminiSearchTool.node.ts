@@ -44,7 +44,7 @@ export class GeminiSearchTool implements INodeType {
         name: 'model',
         type: 'options',
         options: [
-        {
+          {
             name: 'Gemini 2.5 Flash Preview 04-17',
             value: 'gemini-2.5-flash-preview-04-17',
           },
@@ -80,15 +80,15 @@ export class GeminiSearchTool implements INodeType {
             name: 'Gemini Embedding',
             value: 'gemini-embedding-exp',
           },
-           {
+          {
             name: 'Imagen 3',
             value: 'imagen-3.0-generate-002',
           },
-           {
+          {
             name: 'Veo 2',
             value: 'veo-2.0-generate-001',
           },
-           {
+          {
             name: 'Gemini 2.0 Flash Live',
             value: 'gemini-2.0-flash-live-001',
           },

@@ -92,15 +92,15 @@ export class GeminiSearch implements INodeType {
             name: 'Gemini Embedding',
             value: 'gemini-embedding-exp',
           },
-           {
+          {
             name: 'Imagen 3',
             value: 'imagen-3.0-generate-002',
           },
-           {
+          {
             name: 'Veo 2',
             value: 'veo-2.0-generate-001',
           },
-           {
+          {
             name: 'Gemini 2.0 Flash Live',
             value: 'gemini-2.0-flash-live-001',
           },

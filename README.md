@@ -129,3 +129,15 @@ For issues or feature requests, please [open an issue](https://github.com/rufaro
 ## License
 
 [MIT](LICENSE)
+
+## v1.1.10 - 2023-10-05
+
+This version introduces dynamic model loading and the new Gemini URL Context tool.
+
+**Key Updates:**
+
+*   **Dynamic Model Loading:** Models are now fetched directly from the Gemini API, ensuring the list is always up-to-date.
+*   **URL Context Tool:** Leverages Gemini's new capability to analyze content from URLs provided in the prompt. This is available in the "Generate Content" operation of the `Gemini Search` node and is enabled by default in the `Gemini Search Tool` node.
+*   **Fixes & Improvements:** Includes fixes for linting issues and general code refinements.
+
+

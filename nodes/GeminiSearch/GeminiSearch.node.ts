@@ -58,7 +58,7 @@ export class GeminiSearch implements INodeType {
         typeOptions: {
           loadOptionsMethod: 'getModels',
         },
-        default: 'gemini-1.5-flash-latest', // Updated default
+        default: 'gemini-2.0-flash', 
         description: 'The Gemini model to use',
       },
       {

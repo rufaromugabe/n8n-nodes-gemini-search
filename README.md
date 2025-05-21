@@ -2,7 +2,7 @@
 
 This is an n8n community node package that provides nodes to interact with Google's Gemini AI models for search and content generation capabilities.
 
-![Gemini Search Nodes](https://img.shields.io/badge/n8n-community-brightgreen) ![Version](https://img.shields.io/badge/version-1.0.20-blue)
+![Gemini Search Nodes](https://img.shields.io/badge/n8n-community-brightgreen) ![Version](https://img.shields.io/badge/version-1.0.24-blue)
 
 ## Features
 

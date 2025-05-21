@@ -50,6 +50,14 @@ export class GeminiSearchTool implements INodeType {
         description: 'The Gemini model to use',
       },
       {
+        displayName: 'Enable URL Context Tool',
+        name: 'enableUrlContext',
+        type: 'boolean',
+        default: true, // Default to true as per previous implementation for the tool
+        description:
+          'Allows the model to use URLs provided in the query as context. Ensure URLs are included in the Query field.',
+      },
+      {
         displayName: 'Organization Context',
         name: 'organization',
         type: 'string',
@@ -182,12 +190,23 @@ export class GeminiSearchTool implements INodeType {
             maxOutputTokens: options.maxOutputTokens || 2048,
             responseMimeType: 'text/plain',
           },
-          tools: [
-            {
-              googleSearch: {},
-            },
-          ],
         };
+
+        // Initialize tools array
+        requestBody.tools = [];
+
+        // For the GeminiSearchTool, googleSearch is a primary function.
+        requestBody.tools.push({ googleSearch: {} });
+
+        const enableUrlContext = this.getNodeParameter(
+          'enableUrlContext',
+          i,
+          true, // Keep default as true for the tool
+        ) as boolean;
+
+        if (enableUrlContext) {
+          requestBody.tools.push({ urlContext: {} });
+        }
 
         if (finalSystemInstruction) {
           requestBody.systemInstruction = {
@@ -258,12 +277,19 @@ export class GeminiSearchTool implements INodeType {
           sourceUrl?: string;
           redirectedSourceUrl?: string;
           fullResponse?: any;
+          urlContextMetadata?: any; // Added this line
         } = {
           result: response.candidates?.[0]?.content?.parts?.[0]?.text || '',
           query,
           organization,
           restrictedUrls: restrictUrls || undefined,
         };
+
+        // Add url_context_metadata to the output if it exists
+        if (response.candidates?.[0]?.url_context_metadata) {
+          outputData.urlContextMetadata =
+            response.candidates[0].url_context_metadata;
+        }
 
         if (options.extractSourceUrl) {
           const sourceUrl = extractSourceUrl(response);

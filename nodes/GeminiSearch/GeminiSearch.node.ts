@@ -101,6 +101,19 @@ export class GeminiSearch implements INodeType {
           'Optional comma-separated list of URLs to restrict search to',
       },
       {
+        displayName: 'Enable URL Context Tool (for Generate Content)',
+        name: 'enableUrlContextForGenContent',
+        type: 'boolean',
+        default: false,
+        displayOptions: {
+          show: {
+            operation: ['generateContent'],
+          },
+        },
+        description:
+          'Allows the model to use URLs provided in the prompt as context. Ensure URLs are included in the Prompt field.',
+      },
+      {
         displayName: 'System Instruction',
         name: 'systemInstruction',
         type: 'string',
@@ -236,12 +249,26 @@ export class GeminiSearch implements INodeType {
           },
         };
 
+        requestBody.tools = []; // Initialize tools array
+
         if (operation === 'webSearch') {
-          requestBody.tools = [
-            {
-              googleSearch: {},
-            },
-          ];
+          requestBody.tools.push({ googleSearch: {} });
+          // As per docs, URL context can be used with Google Search
+          requestBody.tools.push({ urlContext: {} });
+        } else if (operation === 'generateContent') {
+          const enableUrlContextForGenContent = this.getNodeParameter(
+            'enableUrlContextForGenContent',
+            i,
+            false,
+          ) as boolean;
+          if (enableUrlContextForGenContent) {
+            requestBody.tools.push({ urlContext: {} });
+          }
+        }
+
+        // If no tools were added (e.g. generateContent without URL context), remove the empty tools array
+        if (requestBody.tools.length === 0) {
+          delete requestBody.tools;
         }
 
         if (finalSystemInstruction) {
@@ -309,6 +336,12 @@ export class GeminiSearch implements INodeType {
           response: response.candidates?.[0]?.content?.parts?.[0]?.text || '',
           fullResponse: response,
         };
+
+        // Add url_context_metadata to the output if it exists
+        if (response.candidates?.[0]?.url_context_metadata) {
+          outputJson.urlContextMetadata =
+            response.candidates[0].url_context_metadata;
+        }
 
         if (operation === 'webSearch') {
           const restrictUrls = this.getNodeParameter(

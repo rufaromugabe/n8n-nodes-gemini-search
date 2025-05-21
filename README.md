@@ -130,7 +130,7 @@ For issues or feature requests, please [open an issue](https://github.com/rufaro
 
 [MIT](LICENSE)
 
-## v1.1.10 - 2023-10-05
+## v1.1.10 
 
 This version introduces dynamic model loading and the new Gemini URL Context tool.
 

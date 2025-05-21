@@ -66,6 +66,7 @@ This is a simplified version focused on search, optimized for use as an n8n tool
 ## Example Workflows
 
 ### Basic Search
+
 1. Create a new workflow
 2. Add a "Gemini Search Tool" node
 3. Configure your API credentials
@@ -73,6 +74,7 @@ This is a simplified version focused on search, optimized for use as an n8n tool
 5. Execute and view the search results
 
 ### Advanced Content Generation
+
 1. Create a new workflow
 2. Add a "Gemini Search" node
 3. Set operation to "Generate Content"
@@ -87,25 +89,31 @@ This node can be used as a tool in n8n AI Agents. To enable community nodes as t
 ### Setting the Environment Variable
 
 #### Bash/Zsh Shell
+
 ```bash
 export N8N_COMMUNITY_PACKAGES_ALLOW_TOOL_USAGE=true
 n8n start
 ```
 
 #### Docker (docker-compose.yml)
+
 ```yaml
 environment:
   - N8N_COMMUNITY_PACKAGES_ALLOW_TOOL_USAGE=true
 ```
 
 #### Desktop App
+
 Create a `.env` file in the n8n directory:
+
 ```
 N8N_COMMUNITY_PACKAGES_ALLOW_TOOL_USAGE=true
 ```
 
 #### Permanent Setting (Mac/Linux)
+
 Add to your `~/.zshrc` or `~/.bash_profile`:
+
 ```bash
 export N8N_COMMUNITY_PACKAGES_ALLOW_TOOL_USAGE=true
 ```

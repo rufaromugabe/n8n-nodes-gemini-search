@@ -136,8 +136,6 @@ This version introduces dynamic model loading and the new Gemini URL Context too
 
 **Key Updates:**
 
-*   **Dynamic Model Loading:** Models are now fetched directly from the Gemini API, ensuring the list is always up-to-date.
-*   **URL Context Tool:** Leverages Gemini's new capability to analyze content from URLs provided in the prompt. This is available in the "Generate Content" operation of the `Gemini Search` node and is enabled by default in the `Gemini Search Tool` node.
-*   **Fixes & Improvements:** Includes fixes for linting issues and general code refinements.
-
-
+- **Dynamic Model Loading:** Models are now fetched directly from the Gemini API, ensuring the list is always up-to-date.
+- **URL Context Tool:** Leverages Gemini's new capability to analyze content from URLs provided in the prompt. This is available in the "Generate Content" operation of the `Gemini Search` node and is enabled by default in the `Gemini Search Tool` node.
+- **Fixes & Improvements:** Includes fixes for linting issues and general code refinements.

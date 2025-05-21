@@ -1,10 +1,10 @@
-import { IExecuteFunctions } from 'n8n-core';
+import { IExecuteFunctions, ILoadOptionsFunctions } from 'n8n-core';
 import {
   INodeExecutionData,
   INodeType,
   INodeTypeDescription,
 } from 'n8n-workflow';
-import { geminiRequest } from './GenericFunctions';
+import { geminiRequest, getModels } from './GenericFunctions';
 import axios from 'axios';
 import { buildSystemInstruction } from './instructionBuilder';
 
@@ -43,57 +43,10 @@ export class GeminiSearchTool implements INodeType {
         displayName: 'Model',
         name: 'model',
         type: 'options',
-        options: [
-          {
-            name: 'Gemini 2.5 Flash Preview 04-17',
-            value: 'gemini-2.5-flash-preview-04-17',
-          },
-          {
-            name: 'Gemini 2.5 Pro Preview',
-            value: 'gemini-2.5-pro-preview-05-06',
-          },
-          {
-            name: 'Gemini 2.0 Flash',
-            value: 'gemini-2.0-flash',
-          },
-          {
-            name: 'Gemini 2.0 Flash Preview Image Generation',
-            value: 'gemini-2.0-flash-preview-image-generation',
-          },
-          {
-            name: 'Gemini 2.0 Flash-Lite',
-            value: 'gemini-2.0-flash-lite',
-          },
-          {
-            name: 'Gemini 1.5 Flash',
-            value: 'gemini-1.5-flash',
-          },
-          {
-            name: 'Gemini 1.5 Flash-8B',
-            value: 'gemini-1.5-flash-8b',
-          },
-          {
-            name: 'Gemini 1.5 Pro',
-            value: 'gemini-1.5-pro',
-          },
-          {
-            name: 'Gemini Embedding',
-            value: 'gemini-embedding-exp',
-          },
-          {
-            name: 'Imagen 3',
-            value: 'imagen-3.0-generate-002',
-          },
-          {
-            name: 'Veo 2',
-            value: 'veo-2.0-generate-001',
-          },
-          {
-            name: 'Gemini 2.0 Flash Live',
-            value: 'gemini-2.0-flash-live-001',
-          },
-        ],
-        default: 'gemini-2.0-flash',
+        typeOptions: {
+          loadOptionsMethod: 'getModels',
+        },
+        default: 'gemini-1.5-flash-latest', // Updated default
         description: 'The Gemini model to use',
       },
       {
@@ -165,6 +118,18 @@ export class GeminiSearchTool implements INodeType {
         ],
       },
     ],
+  };
+
+  methods = {
+    loadOptions: {
+      async getModels(this: ILoadOptionsFunctions) {
+        const models = await getModels.call(this);
+        return models.map((model) => ({
+          name: model,
+          value: model,
+        }));
+      },
+    },
   };
 
   async execute(this: IExecuteFunctions): Promise<INodeExecutionData[][]> {

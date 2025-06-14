@@ -1,6 +1,6 @@
 {
   "name": "n8n-nodes-gemini-search",
-  "version": "1.1.11",
+  "version": "1.1.12",
   "description": "n8n nodes to interact with Google Gemini API for search and content generation",
   "keywords": [
     "n8n-community-node-package",
@@ -8,7 +8,14 @@
     "gemini",
     "google",
     "ai",
-    "search"
+    "search",
+    "n8n-nodes",
+    "n8n-nodes-gemini-search",
+    "gemini-search",
+    "gemini-search-node",
+    "gemini-search-tool",
+    "gemini-search-api",
+    "generation"
   ],
   "license": "MIT",
   "homepage": "https://n8n.io",

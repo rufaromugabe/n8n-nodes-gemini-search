@@ -158,15 +158,25 @@ export class GeminiSearch implements INodeType {
             displayName: 'Top P',
             name: 'topP',
             type: 'number',
+            typeOptions: {
+              minValue: 0,
+              maxValue: 1,
+              numberPrecision: 2,
+            },
             default: 1,
-            description: 'Nucleus sampling parameter',
+            description: 'Nucleus sampling parameter (0-1)..',
           },
           {
             displayName: 'Top K',
             name: 'topK',
             type: 'number',
+            typeOptions: {
+              minValue: 1,
+              maxValue: 40,
+            },
             default: 1,
-            description: 'Top K sampling parameter',
+            description:
+              'Top K sampling parameter. Only included in request if set.',
           },
           {
             displayName: 'Extract Source URL',
@@ -241,19 +251,26 @@ export class GeminiSearch implements INodeType {
             },
           ],
           generationConfig: {
-            temperature: options.temperature || 0.6,
-            topP: options.topP || 1,
-            topK: options.topK || 1,
+            temperature:
+              options.temperature !== undefined ? options.temperature : 0.6,
             maxOutputTokens: options.maxOutputTokens || 2048,
             responseMimeType: 'text/plain',
           },
         };
 
+        // Only add topP and topK if they are explicitly set
+        if (options.topP !== undefined) {
+          requestBody.generationConfig.topP = options.topP;
+        }
+        if (options.topK !== undefined) {
+          requestBody.generationConfig.topK = options.topK;
+        }
+
         requestBody.tools = []; // Initialize tools array
 
         if (operation === 'webSearch') {
           requestBody.tools.push({ googleSearch: {} });
-          // As per docs, URL context can be used with Google Search
+          // URL context is always available for web search as per docs
           requestBody.tools.push({ urlContext: {} });
         } else if (operation === 'generateContent') {
           const enableUrlContextForGenContent = this.getNodeParameter(

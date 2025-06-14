@@ -15,5 +15,12 @@ export class GeminiSearchApiCredentials implements ICredentialType {
       default: '',
       required: true,
     },
+    {
+      displayName: 'Host',
+      name: 'host',
+      type: 'string',
+      default: 'https://generativelanguage.googleapis.com',
+      placeholder: 'https://generativelanguage.googleapis.com',
+    },
   ];
 }

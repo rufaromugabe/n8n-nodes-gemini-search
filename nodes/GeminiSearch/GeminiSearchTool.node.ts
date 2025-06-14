@@ -100,6 +100,30 @@ export class GeminiSearchTool implements INodeType {
             description: 'Maximum number of tokens to generate',
           },
           {
+            displayName: 'Top P',
+            name: 'topP',
+            type: 'number',
+            typeOptions: {
+              minValue: 0,
+              maxValue: 1,
+              numberPrecision: 2,
+            },
+            default: 1,
+            description:
+              'Nucleus sampling parameter (0-1). Only included in request if set.',
+          },
+          {
+            displayName: 'Top K',
+            name: 'topK',
+            type: 'number',
+            typeOptions: {
+              minValue: 1,
+              maxValue: 40,
+            },
+            default: 1,
+            description: 'Top K sampling parameter. ',
+          },
+          {
             displayName: 'Custom System Instruction',
             name: 'systemInstruction',
             type: 'string',
@@ -161,6 +185,8 @@ export class GeminiSearchTool implements INodeType {
         const options = this.getNodeParameter('options', i, {}) as {
           temperature?: number;
           maxOutputTokens?: number;
+          topP?: number;
+          topK?: number;
           systemInstruction?: string;
           returnFullResponse?: boolean;
           extractSourceUrl?: boolean;
@@ -184,13 +210,20 @@ export class GeminiSearchTool implements INodeType {
             },
           ],
           generationConfig: {
-            temperature: options.temperature || 0.6,
-            topP: 1,
-            topK: 1,
+            temperature:
+              options.temperature !== undefined ? options.temperature : 0.6,
             maxOutputTokens: options.maxOutputTokens || 2048,
             responseMimeType: 'text/plain',
           },
         };
+
+        // Only add topP and topK if they are explicitly set
+        if (options.topP !== undefined) {
+          requestBody.generationConfig.topP = options.topP;
+        }
+        if (options.topK !== undefined) {
+          requestBody.generationConfig.topK = options.topK;
+        }
 
         // Initialize tools array
         requestBody.tools = [];

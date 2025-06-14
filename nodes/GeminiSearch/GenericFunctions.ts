@@ -23,10 +23,11 @@ export async function geminiRequest(
   }
 
   const apiKey = credentials.apiKey;
+  const host = credentials.host || 'https://generativelanguage.googleapis.com';
 
   const options: OptionsWithUri = {
     method: 'POST',
-    uri: `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`,
+    uri: `${host}/v1beta/models/${model}:generateContent`,
     qs: {
       key: apiKey,
     },
@@ -72,10 +73,11 @@ export async function getModels(
   }
 
   const apiKey = credentials.apiKey;
+  const host = credentials.host || 'https://generativelanguage.googleapis.com';
 
   const options: OptionsWithUri = {
     method: 'GET',
-    uri: 'https://generativelanguage.googleapis.com/v1beta/models',
+    uri: `${host}/v1beta/models`,
     qs: {
       key: apiKey,
     },

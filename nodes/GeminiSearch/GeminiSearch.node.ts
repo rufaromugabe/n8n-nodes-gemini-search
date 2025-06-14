@@ -101,13 +101,13 @@ export class GeminiSearch implements INodeType {
           'Optional comma-separated list of URLs to restrict search to',
       },
       {
-        displayName: 'Enable URL Context Tool (for Generate Content)',
-        name: 'enableUrlContextForGenContent',
+        displayName: 'Enable URL Context Tool',
+        name: 'enableUrlContext',
         type: 'boolean',
-        default: false,
+        default: true,
         displayOptions: {
           show: {
-            operation: ['generateContent'],
+            operation: ['webSearch'],
           },
         },
         description:
@@ -251,12 +251,17 @@ export class GeminiSearch implements INodeType {
             },
           ],
           generationConfig: {
-            temperature:
-              options.temperature !== undefined ? options.temperature : 0.6,
             maxOutputTokens: options.maxOutputTokens || 2048,
             responseMimeType: 'text/plain',
           },
         };
+
+        // Add temperature only if explicitly set (including 0)
+        if (options.temperature !== undefined) {
+          requestBody.generationConfig.temperature = options.temperature;
+        } else {
+          requestBody.generationConfig.temperature = 0.6; // Default value
+        }
 
         // Only add topP and topK if they are explicitly set
         if (options.topP !== undefined) {
@@ -270,18 +275,17 @@ export class GeminiSearch implements INodeType {
 
         if (operation === 'webSearch') {
           requestBody.tools.push({ googleSearch: {} });
-          // URL context is always available for web search as per docs
-          requestBody.tools.push({ urlContext: {} });
-        } else if (operation === 'generateContent') {
-          const enableUrlContextForGenContent = this.getNodeParameter(
-            'enableUrlContextForGenContent',
+          // Check if URL context is enabled for web search
+          const enableUrlContext = this.getNodeParameter(
+            'enableUrlContext',
             i,
-            false,
+            true,
           ) as boolean;
-          if (enableUrlContextForGenContent) {
+          if (enableUrlContext) {
             requestBody.tools.push({ urlContext: {} });
           }
         }
+        // Generate content does not use any tools
 
         // If no tools were added (e.g. generateContent without URL context), remove the empty tools array
         if (requestBody.tools.length === 0) {

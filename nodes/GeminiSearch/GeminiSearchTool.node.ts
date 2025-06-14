@@ -210,12 +210,17 @@ export class GeminiSearchTool implements INodeType {
             },
           ],
           generationConfig: {
-            temperature:
-              options.temperature !== undefined ? options.temperature : 0.6,
             maxOutputTokens: options.maxOutputTokens || 2048,
             responseMimeType: 'text/plain',
           },
         };
+
+        // Add temperature only if explicitly set (including 0)
+        if (options.temperature !== undefined) {
+          requestBody.generationConfig.temperature = options.temperature;
+        } else {
+          requestBody.generationConfig.temperature = 0.6; // Default value
+        }
 
         // Only add topP and topK if they are explicitly set
         if (options.topP !== undefined) {

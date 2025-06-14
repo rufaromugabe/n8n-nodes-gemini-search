@@ -5,7 +5,7 @@ export class GeminiSearchApiCredentials implements ICredentialType {
   displayName = 'Gemini API Credentials';
   documentationUrl = 'https://ai.google.dev/';
   properties: INodeProperties[] = [
-     {
+    {
       displayName: 'Host',
       name: 'host',
       type: 'string',

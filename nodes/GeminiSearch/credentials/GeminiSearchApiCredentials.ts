@@ -23,7 +23,5 @@ export class GeminiSearchApiCredentials implements ICredentialType {
       default: '',
       required: true,
     },
-    
   ];
 }
-    

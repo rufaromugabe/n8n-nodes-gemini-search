@@ -53,6 +53,49 @@ export class GeminiSearchTool implements INodeType {
         description: 'The Gemini model to use',
       },
       {
+        displayName: 'Enable URL Context Tool',
+        name: 'enableUrlContext',
+        type: 'boolean',
+        default: false,
+        description:
+          'When enabled, allows the model to use specific URLs as context. When disabled, uses general Gemini search.',
+      },
+      {
+        displayName: 'Restrict Search to URLs',
+        name: 'restrictUrls',
+        type: 'string',
+        default: '',
+        placeholder: 'example.com,docs.example.com',
+        description:
+          'Comma-separated list of URLs to restrict search to. Only used when URL Context is enabled.',
+        displayOptions: {
+          show: {
+            enableUrlContext: [true],
+          },
+        },
+      },
+      {
+        displayName: 'Enable Organization Context',
+        name: 'enableOrganizationContext',
+        type: 'boolean',
+        default: false,
+        description:
+          'When enabled, restricts search to a specific organization domain.',
+      },
+      {
+        displayName: 'Organization Context',
+        name: 'organization',
+        type: 'string',
+        default: '',
+        description:
+          'Organization name to use as context for search. Only used when Organization Context is enabled.',
+        displayOptions: {
+          show: {
+            enableOrganizationContext: [true],
+          },
+        },
+      },
+      {
         displayName: 'Options',
         name: 'options',
         type: 'collection',
@@ -126,31 +169,6 @@ export class GeminiSearchTool implements INodeType {
             default: false,
             description: 'Whether to extract the source URL from the response',
           },
-          {
-            displayName: 'Enable URL Context Tool',
-            name: 'enableUrlContext',
-            type: 'boolean',
-            default: true,
-            description:
-              'Allows the model to use URLs provided in the query as context. Ensure URLs are included in the Query field.',
-          },
-          {
-            displayName: 'Organization Context',
-            name: 'organization',
-            type: 'string',
-            default: '',
-            description:
-              'Optional organization name to use as context for search',
-          },
-          {
-            displayName: 'Restrict Search to URLs',
-            name: 'restrictUrls',
-            type: 'string',
-            default: '',
-            placeholder: 'example.com,docs.example.com',
-            description:
-              'Optional comma-separated list of URLs to restrict search to',
-          },
         ],
       },
     ],
@@ -184,23 +202,37 @@ export class GeminiSearchTool implements INodeType {
           systemInstruction?: string;
           returnFullResponse?: boolean;
           extractSourceUrl?: boolean;
-          enableUrlContext?: boolean;
-          organization?: string;
-          restrictUrls?: string;
         };
+
+        const enableUrlContext = this.getNodeParameter(
+          'enableUrlContext',
+          i,
+          false,
+        ) as boolean;
+        const restrictUrls = this.getNodeParameter(
+          'restrictUrls',
+          i,
+          '',
+        ) as string;
+        const enableOrganizationContext = this.getNodeParameter(
+          'enableOrganizationContext',
+          i,
+          false,
+        ) as boolean;
+        const organization = enableOrganizationContext
+          ? (this.getNodeParameter('organization', i, '') as string)
+          : '';
 
         const finalSystemInstruction = buildSystemInstruction({
           systemInstruction: options.systemInstruction,
-          organization: options.organization || '',
+          organization: organization,
         });
 
-        // Build user query with URL context if urlContext tool is enabled
-        const enableUrlContext =
-          options.enableUrlContext !== undefined
-            ? options.enableUrlContext
-            : true;
-        const finalQuery = enableUrlContext
-          ? buildUserQueryWithUrlContext(query, options.restrictUrls)
+        // Build user query with URL context if urlContext tool is enabled AND URLs are provided
+        const hasUrls = restrictUrls && restrictUrls.trim() !== '';
+        const shouldUseUrlContext = enableUrlContext && hasUrls;
+        const finalQuery = shouldUseUrlContext
+          ? buildUserQueryWithUrlContext(query, restrictUrls)
           : query;
 
         const requestBody: any = {
@@ -238,14 +270,14 @@ export class GeminiSearchTool implements INodeType {
         // Initialize tools array
         requestBody.tools = [];
 
-        // Add urlContext tool if enabled
-        if (enableUrlContext) {
+        // Add urlContext tool only if enabled AND URLs are provided
+        if (shouldUseUrlContext) {
           requestBody.tools.push({ urlContext: {} });
         }
 
-        // Add googleSearch tool only if urlContext is disabled
-        // When urlContext is enabled, it can handle search functionality
-        if (!enableUrlContext) {
+        // Add googleSearch tool if urlContext is not being used
+        // When urlContext is enabled with URLs, it can handle search functionality
+        if (!shouldUseUrlContext) {
           requestBody.tools.push({ googleSearch: {} });
         }
 
@@ -322,8 +354,8 @@ export class GeminiSearchTool implements INodeType {
         } = {
           result: response.candidates?.[0]?.content?.parts?.[0]?.text || '',
           query,
-          organization: options.organization || '',
-          restrictedUrls: options.restrictUrls || undefined,
+          organization: organization,
+          restrictedUrls: restrictUrls || undefined,
         };
 
         // Add url_context_metadata to the output if it exists

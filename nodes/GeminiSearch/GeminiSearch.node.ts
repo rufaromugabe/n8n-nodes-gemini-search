@@ -78,16 +78,17 @@ export class GeminiSearch implements INodeType {
         description: 'The prompt to send to Gemini',
       },
       {
-        displayName: 'Organization Context',
-        name: 'organization',
-        type: 'string',
-        default: '',
+        displayName: 'Enable URL Context Tool',
+        name: 'enableUrlContext',
+        type: 'boolean',
+        default: false,
         displayOptions: {
           show: {
             operation: ['webSearch'],
           },
         },
-        description: 'Optional organization name to use as context for search',
+        description:
+          'When enabled, allows the model to use specific URLs as context. When disabled, uses general Gemini search.',
       },
       {
         displayName: 'Restrict Search to URLs',
@@ -98,23 +99,38 @@ export class GeminiSearch implements INodeType {
         displayOptions: {
           show: {
             operation: ['webSearch'],
+            enableUrlContext: [true],
           },
         },
         description:
-          'Optional comma-separated list of URLs to restrict search to',
+          'Comma-separated list of URLs to restrict search to. Only used when URL Context is enabled.',
       },
       {
-        displayName: 'Enable URL Context Tool',
-        name: 'enableUrlContext',
+        displayName: 'Enable Organization Context',
+        name: 'enableOrganizationContext',
         type: 'boolean',
-        default: true,
+        default: false,
         displayOptions: {
           show: {
             operation: ['webSearch'],
           },
         },
         description:
-          'Allows the model to use URLs provided in the prompt as context. Ensure URLs are included in the Prompt field.',
+          'When enabled, restricts search to a specific organization domain.',
+      },
+      {
+        displayName: 'Organization Context',
+        name: 'organization',
+        type: 'string',
+        default: '',
+        displayOptions: {
+          show: {
+            operation: ['webSearch'],
+            enableOrganizationContext: [true],
+          },
+        },
+        description:
+          'Organization name to use as context for search. Only used when Organization Context is enabled.',
       },
       {
         displayName: 'System Instruction',
@@ -227,8 +243,16 @@ export class GeminiSearch implements INodeType {
           i,
           '',
         ) as string;
-        const organization =
+        const enableOrganizationContext =
           operation === 'webSearch'
+            ? (this.getNodeParameter(
+                'enableOrganizationContext',
+                i,
+                false,
+              ) as boolean)
+            : false;
+        const organization =
+          operation === 'webSearch' && enableOrganizationContext
             ? (this.getNodeParameter('organization', i, '') as string)
             : '';
         const restrictUrls =
@@ -241,15 +265,16 @@ export class GeminiSearch implements INodeType {
           organization,
         });
 
-        // Build user query with URL context if urlContext tool is enabled for webSearch
+        // Build user query with URL context if urlContext tool is enabled for webSearch AND URLs are provided
         const enableUrlContext =
           operation === 'webSearch'
-            ? (this.getNodeParameter('enableUrlContext', i, true) as boolean)
+            ? (this.getNodeParameter('enableUrlContext', i, false) as boolean)
             : false;
-        const finalPrompt =
-          enableUrlContext && restrictUrls
-            ? buildUserQueryWithUrlContext(prompt, restrictUrls)
-            : prompt;
+        const hasUrls = restrictUrls && restrictUrls.trim() !== '';
+        const shouldUseUrlContext = enableUrlContext && hasUrls;
+        const finalPrompt = shouldUseUrlContext
+          ? buildUserQueryWithUrlContext(prompt, restrictUrls)
+          : prompt;
 
         const requestBody: any = {
           contents: [
@@ -287,7 +312,7 @@ export class GeminiSearch implements INodeType {
 
         if (operation === 'webSearch') {
           requestBody.tools.push({ googleSearch: {} });
-          if (enableUrlContext) {
+          if (shouldUseUrlContext) {
             requestBody.tools.push({ urlContext: {} });
           }
         }

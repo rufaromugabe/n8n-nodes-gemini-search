@@ -4,11 +4,10 @@ This is an n8n community node package that provides nodes to interact with Googl
 
 ![Gemini Search Nodes](https://img.shields.io/badge/n8n-community-brightgreen) ![Version](https://img.shields.io/badge/version-1.1.16-blue)
 
-## Main Interface
 
-![Gemini Search Tool - Main Interface](docs/screenshots/gemini-search-tool-context-url.png)
 
-*Gemini Search Tool with URL Context enabled, showing the progressive UI with conditional fields*
+![Gemini Search Tool - Main Interface](docs/screenshots/main.png)
+
 
 ## Features
 

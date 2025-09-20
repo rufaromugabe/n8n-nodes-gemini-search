@@ -6,7 +6,10 @@ import {
 } from 'n8n-workflow';
 import { geminiRequest, getModels } from './GenericFunctions';
 import axios from 'axios';
-import { buildSystemInstruction, buildUserQueryWithUrlContext } from './instructionBuilder';
+import {
+  buildSystemInstruction,
+  buildUserQueryWithUrlContext,
+} from './instructionBuilder';
 
 export class GeminiSearchTool implements INodeType {
   description: INodeTypeDescription = {
@@ -136,7 +139,8 @@ export class GeminiSearchTool implements INodeType {
             name: 'organization',
             type: 'string',
             default: '',
-            description: 'Optional organization name to use as context for search',
+            description:
+              'Optional organization name to use as context for search',
           },
           {
             displayName: 'Restrict Search to URLs',
@@ -191,8 +195,11 @@ export class GeminiSearchTool implements INodeType {
         });
 
         // Build user query with URL context if urlContext tool is enabled
-        const enableUrlContext = options.enableUrlContext !== undefined ? options.enableUrlContext : true;
-        const finalQuery = enableUrlContext 
+        const enableUrlContext =
+          options.enableUrlContext !== undefined
+            ? options.enableUrlContext
+            : true;
+        const finalQuery = enableUrlContext
           ? buildUserQueryWithUrlContext(query, options.restrictUrls)
           : query;
 

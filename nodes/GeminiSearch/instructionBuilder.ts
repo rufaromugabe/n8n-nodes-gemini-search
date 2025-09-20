@@ -16,7 +16,10 @@ export function buildSystemInstruction(options: {
   return systemInstruction;
 }
 
-export function buildUserQueryWithUrlContext(query: string, restrictUrls?: string): string {
+export function buildUserQueryWithUrlContext(
+  query: string,
+  restrictUrls?: string,
+): string {
   if (!restrictUrls) {
     return query;
   }
@@ -25,11 +28,13 @@ export function buildUserQueryWithUrlContext(query: string, restrictUrls?: strin
     .split(',')
     .map((url) => url.trim())
     .filter((url) => url !== '');
-  
+
   if (urlList.length === 0) {
     return query;
   }
 
   // Append URL context to the user query
-  return `${query}\n\nHere is the URL(s) for your research:: ${urlList.join(', ')}.`;
+  return `${query}\n\nHere is the URL(s) for your research:: ${urlList.join(
+    ', ',
+  )}.`;
 }

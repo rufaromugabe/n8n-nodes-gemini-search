@@ -6,7 +6,10 @@ import {
 } from 'n8n-workflow';
 import { geminiRequest, getModels } from './GenericFunctions';
 import axios from 'axios';
-import { buildSystemInstruction } from './instructionBuilder';
+import {
+  buildSystemInstruction,
+  buildUserQueryWithUrlContext,
+} from './instructionBuilder';
 
 export class GeminiSearch implements INodeType {
   description: INodeTypeDescription = {
@@ -236,8 +239,17 @@ export class GeminiSearch implements INodeType {
         const finalSystemInstruction = buildSystemInstruction({
           systemInstruction,
           organization,
-          restrictUrls,
         });
+
+        // Build user query with URL context if urlContext tool is enabled for webSearch
+        const enableUrlContext =
+          operation === 'webSearch'
+            ? (this.getNodeParameter('enableUrlContext', i, true) as boolean)
+            : false;
+        const finalPrompt =
+          enableUrlContext && restrictUrls
+            ? buildUserQueryWithUrlContext(prompt, restrictUrls)
+            : prompt;
 
         const requestBody: any = {
           contents: [
@@ -245,7 +257,7 @@ export class GeminiSearch implements INodeType {
               role: 'user',
               parts: [
                 {
-                  text: prompt,
+                  text: finalPrompt,
                 },
               ],
             },
@@ -275,12 +287,6 @@ export class GeminiSearch implements INodeType {
 
         if (operation === 'webSearch') {
           requestBody.tools.push({ googleSearch: {} });
-          // Check if URL context is enabled for web search
-          const enableUrlContext = this.getNodeParameter(
-            'enableUrlContext',
-            i,
-            true,
-          ) as boolean;
           if (enableUrlContext) {
             requestBody.tools.push({ urlContext: {} });
           }

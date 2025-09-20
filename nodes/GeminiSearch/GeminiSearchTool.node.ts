@@ -10,14 +10,14 @@ import { buildSystemInstruction } from './instructionBuilder';
 
 export class GeminiSearchTool implements INodeType {
   description: INodeTypeDescription = {
-    displayName: 'Gemini Search Tool',
+    displayName: 'Gemini Search',
     name: 'geminiSearchTool',
     icon: 'file:gemini.svg',
     group: ['transform'],
     version: 1,
     description: 'Use Google Gemini as a search tool',
     defaults: {
-      name: 'Gemini Search Tool',
+      name: 'Gemini Search',
     },
     // @ts-expect-error - node-class-description-outputs-wrong - intentionally suppressing type error
     inputs: [{ type: 'main', required: true }],

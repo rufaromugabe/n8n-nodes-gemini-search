@@ -1,11 +1,14 @@
-import { IExecuteFunctions, ILoadOptionsFunctions } from 'n8n-core';
-import {
+import type {
+  IExecuteFunctions,
+  ILoadOptionsFunctions,
   INodeExecutionData,
   INodeType,
   INodeTypeDescription,
 } from 'n8n-workflow';
+import { sleep } from 'n8n-workflow';
 import { geminiRequest, getModels } from './GenericFunctions';
 import axios from 'axios';
+import { mainProperties } from './Description';
 import {
   buildSystemInstruction,
   buildUserQueryWithUrlContext,
@@ -32,181 +35,7 @@ export class GeminiSearch implements INodeType {
         required: true,
       },
     ],
-    properties: [
-      {
-        displayName: 'Operation',
-        name: 'operation',
-        type: 'options',
-        noDataExpression: true,
-        options: [
-          {
-            name: 'Web Search',
-            value: 'webSearch',
-            description: 'Perform a web search using Gemini',
-            action: 'Perform a web search using Gemini',
-          },
-          {
-            name: 'Generate Content',
-            value: 'generateContent',
-            description: 'Generate content using Gemini',
-            action: 'Generate content using Gemini',
-          },
-        ],
-        default: 'webSearch',
-      },
-      {
-        displayName: 'Model',
-        name: 'model',
-        type: 'options',
-        typeOptions: {
-          loadOptionsMethod: 'getModels',
-        },
-        default: 'gemini-2.0-flash',
-        description: 'The Gemini model to use',
-      },
-      {
-        displayName: 'Prompt',
-        name: 'prompt',
-        type: 'string',
-        default: '',
-        required: true,
-        displayOptions: {
-          show: {
-            operation: ['webSearch', 'generateContent'],
-          },
-        },
-        description: 'The prompt to send to Gemini',
-      },
-      {
-        displayName: 'Enable URL Context Tool',
-        name: 'enableUrlContext',
-        type: 'boolean',
-        default: false,
-        displayOptions: {
-          show: {
-            operation: ['webSearch'],
-          },
-        },
-        description:
-          'When enabled, allows the model to use specific URLs as context. When disabled, uses general Gemini search.',
-      },
-      {
-        displayName: 'Restrict Search to URLs',
-        name: 'restrictUrls',
-        type: 'string',
-        default: '',
-        placeholder: 'example.com,docs.example.com',
-        displayOptions: {
-          show: {
-            operation: ['webSearch'],
-            enableUrlContext: [true],
-          },
-        },
-        description:
-          'Comma-separated list of URLs to restrict search to. Only used when URL Context is enabled.',
-      },
-      {
-        displayName: 'Enable Organization Context',
-        name: 'enableOrganizationContext',
-        type: 'boolean',
-        default: false,
-        displayOptions: {
-          show: {
-            operation: ['webSearch'],
-          },
-        },
-        description:
-          'When enabled, restricts search to a specific organization domain.',
-      },
-      {
-        displayName: 'Organization Context',
-        name: 'organization',
-        type: 'string',
-        default: '',
-        displayOptions: {
-          show: {
-            operation: ['webSearch'],
-            enableOrganizationContext: [true],
-          },
-        },
-        description:
-          'Organization name to use as context for search. Only used when Organization Context is enabled.',
-      },
-      {
-        displayName: 'System Instruction',
-        name: 'systemInstruction',
-        type: 'string',
-        typeOptions: {
-          rows: 4,
-        },
-        default: '',
-        displayOptions: {
-          show: {
-            operation: ['webSearch', 'generateContent'],
-          },
-        },
-        description: 'Optional system instruction to guide the model behavior',
-      },
-      {
-        displayName: 'Options',
-        name: 'options',
-        type: 'collection',
-        placeholder: 'Add Option',
-        default: {},
-        options: [
-          {
-            displayName: 'Temperature',
-            name: 'temperature',
-            type: 'number',
-            typeOptions: {
-              minValue: 0,
-              maxValue: 1,
-              numberPrecision: 1,
-            },
-            default: 0.6,
-            description: 'Controls randomness in the response (0-1)',
-          },
-          {
-            displayName: 'Max Output Tokens',
-            name: 'maxOutputTokens',
-            type: 'number',
-            default: 2048,
-            description: 'Maximum number of tokens to generate',
-          },
-          {
-            displayName: 'Top P',
-            name: 'topP',
-            type: 'number',
-            typeOptions: {
-              minValue: 0,
-              maxValue: 1,
-              numberPrecision: 2,
-            },
-            default: 1,
-            description: 'Nucleus sampling parameter (0-1)..',
-          },
-          {
-            displayName: 'Top K',
-            name: 'topK',
-            type: 'number',
-            typeOptions: {
-              minValue: 1,
-              maxValue: 40,
-            },
-            default: 1,
-            description:
-              'Top K sampling parameter. Only included in request if set.',
-          },
-          {
-            displayName: 'Extract Source URL',
-            name: 'extractSourceUrl',
-            type: 'boolean',
-            default: false,
-            description: 'Whether to extract the source URL from the response',
-          },
-        ],
-      },
-    ],
+    properties: mainProperties,
   };
 
   methods = {
@@ -225,6 +54,10 @@ export class GeminiSearch implements INodeType {
     const items = this.getInputData();
     const returnData: INodeExecutionData[] = [];
 
+    // Collect per-item promises for concurrent execution
+    const requestPromises: Array<Promise<any>> = [];
+    const errorItems: Record<number, string> = {};
+
     for (let i = 0; i < items.length; i++) {
       try {
         const operation = this.getNodeParameter('operation', i) as string;
@@ -236,7 +69,23 @@ export class GeminiSearch implements INodeType {
           topP?: number;
           topK?: number;
           extractSourceUrl?: boolean;
+          batching: { batch: { batchSize: number; batchInterval: number } };
         };
+
+        // Batching throttle (mirrors HttpRequest.node.ts behavior)
+        // Defaults batch size to 1 if set to 0, and -1 disables batching
+        const batchSize =
+          options?.batching?.batch?.batchSize &&
+          options.batching.batch.batchSize > 0
+            ? options.batching.batch.batchSize
+            : 1;
+        const batchInterval = options?.batching?.batch?.batchInterval ?? 0;
+
+        if (i > 0 && batchSize >= 0 && batchInterval > 0) {
+          if (i % batchSize === 0) {
+            await sleep(batchInterval);
+          }
+        }
 
         const systemInstruction = this.getNodeParameter(
           'systemInstruction',
@@ -308,8 +157,7 @@ export class GeminiSearch implements INodeType {
           requestBody.generationConfig.topK = options.topK;
         }
 
-        requestBody.tools = []; // Initialize tools array
-
+        requestBody.tools = [];
         if (operation === 'webSearch') {
           requestBody.tools.push({ googleSearch: {} });
           if (shouldUseUrlContext) {
@@ -333,112 +181,131 @@ export class GeminiSearch implements INodeType {
           };
         }
 
-        const response = await geminiRequest.call(this, model, requestBody);
+        const perItemPromise = (async () => {
+          const response = await geminiRequest.call(this, model, requestBody);
 
-        // Function to extract source URL from groundingMetadata
-        const extractSourceUrl = (responseObj: any): string => {
-          const possiblePaths = [
-            responseObj?.candidates?.[0]?.groundingMetadata
-              ?.groundingChunks?.[0]?.web?.uri,
-          ];
+          // Function to extract source URL from groundingMetadata
+          const extractSourceUrl = (responseObj: any): string => {
+            const possiblePaths = [
+              responseObj?.candidates?.[0]?.groundingMetadata
+                ?.groundingChunks?.[0]?.web?.uri,
+            ];
+            return (
+              possiblePaths.find(
+                (url) =>
+                  typeof url === 'string' &&
+                  (url.startsWith('http://') || url.startsWith('https://')),
+              ) || ''
+            );
+          };
 
-          // Return the first valid URL
-          return (
-            possiblePaths.find(
-              (url) =>
-                typeof url === 'string' &&
-                (url.startsWith('http://') || url.startsWith('https://')),
-            ) || ''
-          );
-        };
-
-        // Function to get final redirected URL
-        const getRedirectedUrl = async (url: string): Promise<string> => {
-          if (!url) return '';
-
-          try {
-            const response = await axios.head(url, {
-              maxRedirects: 10,
-              timeout: 5000,
-              validateStatus: null, // Don't throw on any status code
-              headers: {
-                'User-Agent':
-                  'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
-              },
-            });
-
-            // Check for the final URL in multiple places
-            const finalUrl =
-              response.request?.res?.responseUrl || // Node.js response
-              response.request?.responseURL || // Browser response
-              (typeof response.request === 'object' && 'res' in response.request
-                ? response.request.res.headers?.location
-                : null) || // Check location header
-              url; // Fallback to original URL
-
-            return finalUrl;
-          } catch (error) {
-            // Return more error details for debugging
-            console.error(`Error fetching redirected URL: ${error.message}`);
-            return url;
-          }
-        };
-
-        const outputJson: any = {
-          response: response.candidates?.[0]?.content?.parts?.[0]?.text || '',
-          fullResponse: response,
-        };
-
-        // Add url_context_metadata to the output if it exists
-        if (response.candidates?.[0]?.url_context_metadata) {
-          outputJson.urlContextMetadata =
-            response.candidates[0].url_context_metadata;
-        }
-
-        if (operation === 'webSearch') {
-          const restrictUrls = this.getNodeParameter(
-            'restrictUrls',
-            i,
-            '',
-          ) as string;
-          if (restrictUrls) {
-            outputJson.restrictedUrls = restrictUrls;
-          }
-        }
-
-        if (options.extractSourceUrl) {
-          const sourceUrl = extractSourceUrl(response);
-          outputJson.sourceUrl = sourceUrl;
-
-          // Get redirected URL if source URL exists
-          if (sourceUrl) {
+          // Function to get final redirected URL
+          const getRedirectedUrl = async (url: string): Promise<string> => {
+            if (!url) return '';
             try {
-              outputJson.redirectedSourceUrl = await getRedirectedUrl(
-                sourceUrl,
-              );
-            } catch (error) {
-              outputJson.redirectedSourceUrl = sourceUrl;
-              outputJson.redirectError = error.message;
+              const response = await axios.head(url, {
+                maxRedirects: 10,
+                timeout: 5000,
+                validateStatus: null, // Don't throw on any status code
+                headers: {
+                  'User-Agent':
+                    'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+                },
+              });
+
+              // Check for the final URL in multiple places
+              const finalUrl =
+                response.request?.res?.responseUrl || // Node.js response
+                response.request?.responseURL || // Browser response
+                (typeof response.request === 'object' &&
+                'res' in response.request
+                  ? response.request.res.headers?.location
+                  : null) || // Check location header
+                url; // Fallback to original URL
+
+              return finalUrl;
+            } catch (error: any) {
+              console.error(`Error fetching redirected URL: ${error.message}`);
+              return url;
+            }
+          };
+
+          const outputJson: any = {
+            response: response.candidates?.[0]?.content?.parts?.[0]?.text || '',
+            fullResponse: response,
+          };
+
+          // Add url_context_metadata to the output if it exists
+          if (response.candidates?.[0]?.url_context_metadata) {
+            outputJson.urlContextMetadata =
+              response.candidates[0].url_context_metadata;
+          }
+
+          if (operation === 'webSearch') {
+            if (restrictUrls) {
+              outputJson.restrictedUrls = restrictUrls;
             }
           }
-        }
 
+          if (options.extractSourceUrl) {
+            const sourceUrl = extractSourceUrl(response);
+            outputJson.sourceUrl = sourceUrl;
+
+            // Get redirected URL if source URL exists
+            if (sourceUrl) {
+              try {
+                outputJson.redirectedSourceUrl = await getRedirectedUrl(
+                  sourceUrl,
+                );
+              } catch (error: any) {
+                outputJson.redirectedSourceUrl = sourceUrl;
+                outputJson.redirectError = error.message;
+              }
+            }
+          }
+
+          return { outputJson };
+        })();
+
+        perItemPromise.catch(() => {});
+        requestPromises.push(perItemPromise);
+      } catch (error: any) {
+        if (!this.continueOnFail()) throw error;
+        errorItems[i] = error.message;
+        // Push a resolved placeholder to preserve index alignment in settled results
+        requestPromises.push(Promise.resolve(undefined));
+        continue;
+      }
+    }
+
+    const settled = await Promise.allSettled(requestPromises);
+
+    for (let i = 0; i < items.length; i++) {
+      const outcome = settled[i] as PromiseSettledResult<any>;
+      if (errorItems[i]) {
         returnData.push({
-          json: outputJson,
+          json: { error: errorItems[i] },
           pairedItem: { item: i },
         });
-      } catch (error) {
+        continue;
+      }
+
+      if (outcome.status !== 'fulfilled') {
         if (this.continueOnFail()) {
+          const reason: any = (outcome as any).reason;
           returnData.push({
-            json: {
-              error: error.message,
-            },
+            json: { error: reason?.message ?? reason },
             pairedItem: { item: i },
           });
           continue;
         }
-        throw error;
+        throw (outcome as any).reason;
       }
+
+      returnData.push({
+        json: outcome.value.outputJson,
+        pairedItem: { item: i },
+      });
     }
 
     return [returnData];

@@ -64,12 +64,12 @@
     "eslint-config-prettier": "^8.5.0",
     "eslint-plugin-prettier": "^4.2.1",
     "gulp": "^4.0.2",
-    "n8n-core": "^0.125.0",
-    "n8n-workflow": "*",
+    "n8n-core": "^1",
+    "n8n-workflow": "^1",
     "prettier": "^2.7.1",
-    "typescript": "~4.8.4"
+    "typescript": "^5.9.3"
   },
   "peerDependencies": {
-    "n8n-workflow": "*"
+    "n8n-workflow": "^1"
   }
 }

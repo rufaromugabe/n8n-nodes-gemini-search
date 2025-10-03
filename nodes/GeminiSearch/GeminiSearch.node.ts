@@ -16,7 +16,7 @@ import {
 
 export class GeminiSearch implements INodeType {
   description: INodeTypeDescription = {
-    displayName: 'Gemini Concurrent Search',
+    displayName: 'Gemini Search',
     name: 'geminiSearch',
     icon: 'file:gemini.svg',
     group: ['transform'],

@@ -124,30 +124,44 @@ export const mainProperties: INodeProperties[] = [
     options: [
       {
         displayName: 'Batching',
-        name: 'batch',
-        values: [
+        name: 'batching',
+        placeholder: 'Add Batching',
+        type: 'fixedCollection',
+        typeOptions: {
+          multipleValues: false,
+        },
+        default: {
+          batch: {},
+        },
+        options: [
           {
-            displayName: 'Items per Batch',
-            name: 'batchSize',
-            type: 'number',
-            typeOptions: {
-              minValue: -1,
-            },
-            default: 15,
-            description:
-              'Input will be split in batches to throttle requests. -1 for disabled. 0 will be treated as 1.',
-          },
-          {
-            // eslint-disable-next-line n8n-nodes-base/node-param-display-name-miscased
-            displayName: 'Batch Interval (ms)',
-            name: 'batchInterval',
-            type: 'number',
-            typeOptions: {
-              minValue: 0,
-            },
-            default: 1000,
-            description:
-              'Time (in milliseconds) between each batch of requests. 0 for disabled.',
+            displayName: 'Batching',
+            name: 'batch',
+            values: [
+              {
+                displayName: 'Items per Batch',
+                name: 'batchSize',
+                type: 'number',
+                typeOptions: {
+                  minValue: -1,
+                },
+                default: 15,
+                description:
+                  'Input will be split in batches to throttle requests. -1 for disabled. 0 will be treated as 1.',
+              },
+              {
+                // eslint-disable-next-line n8n-nodes-base/node-param-display-name-miscased
+                displayName: 'Batch Interval (ms)',
+                name: 'batchInterval',
+                type: 'number',
+                typeOptions: {
+                  minValue: 0,
+                },
+                default: 1000,
+                description:
+                  'Time (in milliseconds) between each batch of requests. 0 for disabled.',
+              },
+            ],
           },
         ],
       },
@@ -167,7 +181,7 @@ export const mainProperties: INodeProperties[] = [
         displayName: 'Max Output Tokens',
         name: 'maxOutputTokens',
         type: 'number',
-        default: 2048,
+        default: 8192,
         description: 'Maximum number of tokens to generate',
       },
       {

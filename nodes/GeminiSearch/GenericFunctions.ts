@@ -7,6 +7,11 @@ import type {
 import { NodeApiError, NodeOperationError } from 'n8n-workflow';
 import { OptionsWithUri } from 'request-promise-native';
 
+/**
+ * Utility function for sleep/delay
+ */
+export const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
+
 export async function geminiRequest(
   this:
     | IExecuteFunctions

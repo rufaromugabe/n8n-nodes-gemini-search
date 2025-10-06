@@ -6,15 +6,17 @@ import type {
   INodeTypeDescription,
 } from 'n8n-workflow';
 
-// Utility function for sleep/delay
-const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
-import { geminiRequest, getModels } from './GenericFunctions';
-import axios from 'axios';
-import { mainProperties } from './Description';
+import { getModels, sleep } from './GenericFunctions';
+import { executeGeminiRequest } from './ExecutionUtils';
 import {
-  buildSystemInstruction,
-  buildUserQueryWithUrlContext,
-} from './instructionBuilder';
+  modelProperty,
+  batchingOptions,
+  commonModelOptions,
+  extractSourceUrlOption,
+  getUrlContextOptions,
+  getOrganizationContextOptions,
+  getSystemInstructionProperty,
+} from './SharedProperties';
 
 export class GeminiSearch implements INodeType {
   description: INodeTypeDescription = {
@@ -37,7 +39,58 @@ export class GeminiSearch implements INodeType {
         required: true,
       },
     ],
-    properties: mainProperties,
+    properties: [
+      {
+        displayName: 'Operation',
+        name: 'operation',
+        type: 'options',
+        noDataExpression: true,
+        options: [
+          {
+            name: 'Web Search',
+            value: 'webSearch',
+            description: 'Perform a web search using Gemini',
+            action: 'Perform a web search using Gemini',
+          },
+          {
+            name: 'Generate Content',
+            value: 'generateContent',
+            description: 'Generate content using Gemini',
+            action: 'Generate content using Gemini',
+          },
+        ],
+        default: 'webSearch',
+      },
+      modelProperty,
+      {
+        displayName: 'Prompt',
+        name: 'prompt',
+        type: 'string',
+        default: '',
+        required: true,
+        displayOptions: {
+          show: {
+            operation: ['webSearch', 'generateContent'],
+          },
+        },
+        description: 'The prompt to send to Gemini',
+      },
+      ...getUrlContextOptions(['webSearch']),
+      ...getOrganizationContextOptions(['webSearch']),
+      getSystemInstructionProperty(['webSearch', 'generateContent']),
+      {
+        displayName: 'Options',
+        name: 'options',
+        type: 'collection',
+        placeholder: 'Add Option',
+        default: {},
+        options: [
+          batchingOptions,
+          ...commonModelOptions,
+          extractSourceUrlOption,
+        ],
+      },
+    ],
   };
 
   methods = {
@@ -111,159 +164,61 @@ export class GeminiSearch implements INodeType {
             ? (this.getNodeParameter('restrictUrls', i, '') as string)
             : '';
 
-        const finalSystemInstruction = buildSystemInstruction({
-          systemInstruction,
-          organization,
-        });
-
         // Build user query with URL context if urlContext tool is enabled for webSearch AND URLs are provided
         const enableUrlContext =
           operation === 'webSearch'
             ? (this.getNodeParameter('enableUrlContext', i, false) as boolean)
             : false;
-        const hasUrls = restrictUrls && restrictUrls.trim() !== '';
-        const shouldUseUrlContext = enableUrlContext && hasUrls;
-        const finalPrompt = shouldUseUrlContext
-          ? buildUserQueryWithUrlContext(prompt, restrictUrls)
-          : prompt;
-
-        const requestBody: any = {
-          contents: [
-            {
-              role: 'user',
-              parts: [
-                {
-                  text: finalPrompt,
-                },
-              ],
-            },
-          ],
-          generationConfig: {
-            maxOutputTokens: options.maxOutputTokens || 2048,
-            responseMimeType: 'text/plain',
-          },
-        };
-
-        // Add temperature only if explicitly set (including 0)
-        if (options.temperature !== undefined) {
-          requestBody.generationConfig.temperature = options.temperature;
-        } else {
-          requestBody.generationConfig.temperature = 0.6; // Default value
-        }
-
-        // Only add topP and topK if they are explicitly set
-        if (options.topP !== undefined) {
-          requestBody.generationConfig.topP = options.topP;
-        }
-        if (options.topK !== undefined) {
-          requestBody.generationConfig.topK = options.topK;
-        }
-
-        requestBody.tools = [];
-        if (operation === 'webSearch') {
-          requestBody.tools.push({ googleSearch: {} });
-          if (shouldUseUrlContext) {
-            requestBody.tools.push({ urlContext: {} });
-          }
-        }
-        // Generate content does not use any tools
-
-        // If no tools were added (e.g. generateContent without URL context), remove the empty tools array
-        if (requestBody.tools.length === 0) {
-          delete requestBody.tools;
-        }
-
-        if (finalSystemInstruction) {
-          requestBody.systemInstruction = {
-            parts: [
-              {
-                text: finalSystemInstruction,
-              },
-            ],
-          };
-        }
 
         const perItemPromise = (async () => {
-          const response = await geminiRequest.call(this, model, requestBody);
+          const output = await executeGeminiRequest(
+            this,
+            {
+              model,
+              prompt,
+              operation: operation as 'webSearch' | 'generateContent',
+              systemInstruction,
+              organization,
+              restrictUrls,
+              enableUrlContext,
+              temperature: options.temperature,
+              maxOutputTokens: options.maxOutputTokens,
+              topP: options.topP,
+              topK: options.topK,
+            },
+            {
+              extractSourceUrl: options.extractSourceUrl,
+              includeFullResponse: true,
+              includeRestrictedUrls: true,
+              restrictUrls,
+              operation,
+            },
+          );
 
-          // Function to extract source URL from groundingMetadata
-          const extractSourceUrl = (responseObj: any): string => {
-            const possiblePaths = [
-              responseObj?.candidates?.[0]?.groundingMetadata
-                ?.groundingChunks?.[0]?.web?.uri,
-            ];
-            return (
-              possiblePaths.find(
-                (url) =>
-                  typeof url === 'string' &&
-                  (url.startsWith('http://') || url.startsWith('https://')),
-              ) || ''
-            );
-          };
-
-          // Function to get final redirected URL
-          const getRedirectedUrl = async (url: string): Promise<string> => {
-            if (!url) return '';
-            try {
-              const response = await axios.head(url, {
-                maxRedirects: 10,
-                timeout: 5000,
-                validateStatus: null, // Don't throw on any status code
-                headers: {
-                  'User-Agent':
-                    'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
-                },
-              });
-
-              // Check for the final URL in multiple places
-              const finalUrl =
-                response.request?.res?.responseUrl || // Node.js response
-                response.request?.responseURL || // Browser response
-                (typeof response.request === 'object' &&
-                'res' in response.request
-                  ? response.request.res.headers?.location
-                  : null) || // Check location header
-                url; // Fallback to original URL
-
-              return finalUrl;
-            } catch (error: any) {
-              console.error(`Error fetching redirected URL: ${error.message}`);
-              return url;
-            }
-          };
-
+          // Map the output to the expected format for GeminiSearch node
           const outputJson: any = {
-            response: response.candidates?.[0]?.content?.parts?.[0]?.text || '',
-            fullResponse: response,
+            response: output.response || '',
+            fullResponse: output.fullResponse,
           };
 
-          // Add url_context_metadata to the output if it exists
-          if (response.candidates?.[0]?.url_context_metadata) {
-            outputJson.urlContextMetadata =
-              response.candidates[0].url_context_metadata;
+          if (output.urlContextMetadata) {
+            outputJson.urlContextMetadata = output.urlContextMetadata;
           }
 
-          if (operation === 'webSearch') {
-            if (restrictUrls) {
-              outputJson.restrictedUrls = restrictUrls;
-            }
+          if (output.restrictedUrls) {
+            outputJson.restrictedUrls = output.restrictedUrls;
           }
 
-          if (options.extractSourceUrl) {
-            const sourceUrl = extractSourceUrl(response);
-            outputJson.sourceUrl = sourceUrl;
+          if (output.sourceUrl) {
+            outputJson.sourceUrl = output.sourceUrl;
+          }
 
-            // Get redirected URL if source URL exists
-            if (sourceUrl) {
-              try {
-                outputJson.redirectedSourceUrl = await getRedirectedUrl(
-                  sourceUrl,
-                );
-              } catch (error: any) {
-                outputJson.redirectedSourceUrl = sourceUrl;
-                outputJson.redirectError = error.message;
-              }
-            }
+          if (output.redirectedSourceUrl) {
+            outputJson.redirectedSourceUrl = output.redirectedSourceUrl;
+          }
+
+          if (output.redirectError) {
+            outputJson.redirectError = output.redirectError;
           }
 
           return { outputJson };

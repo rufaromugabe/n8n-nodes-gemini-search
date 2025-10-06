@@ -20,14 +20,14 @@ import {
 
 export class GeminiSearchTool implements INodeType {
   description: INodeTypeDescription = {
-    displayName: 'Gemini Search',
+    displayName: 'Gemini Search Tool',
     name: 'geminiSearchTool',
     icon: 'file:gemini.svg',
     group: ['transform'],
     version: 1,
     description: 'Use Google Gemini as a search tool',
     defaults: {
-      name: 'Gemini Search',
+      name: 'Gemini Search Tool',
     },
     // @ts-expect-error - node-class-description-outputs-wrong - intentionally suppressing type error
     inputs: [{ type: 'main', required: true }],

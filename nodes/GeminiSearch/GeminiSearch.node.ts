@@ -5,7 +5,9 @@ import type {
   INodeType,
   INodeTypeDescription,
 } from 'n8n-workflow';
-import { sleep } from 'n8n-workflow';
+
+// Utility function for sleep/delay
+const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 import { geminiRequest, getModels } from './GenericFunctions';
 import axios from 'axios';
 import { mainProperties } from './Description';

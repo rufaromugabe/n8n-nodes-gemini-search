@@ -1,9 +1,9 @@
-import {
+import type {
   IExecuteFunctions,
   IHookFunctions,
   ILoadOptionsFunctions,
   IWebhookFunctions,
-} from 'n8n-core';
+} from 'n8n-workflow';
 import { NodeApiError, NodeOperationError } from 'n8n-workflow';
 import { OptionsWithUri } from 'request-promise-native';
 

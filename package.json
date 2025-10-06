@@ -1,6 +1,6 @@
 {
   "name": "n8n-nodes-gemini-search",
-  "version": "1.1.17",
+  "version": "1.2.0",
   "description": "n8n nodes to interact with Google Gemini API for search and content generation",
   "keywords": [
     "n8n-community-node-package",

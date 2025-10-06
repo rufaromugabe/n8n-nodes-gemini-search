@@ -224,7 +224,6 @@ export class GeminiSearch implements INodeType {
           return { outputJson };
         })();
 
-        perItemPromise.catch(() => {});
         requestPromises.push(perItemPromise);
       } catch (error: any) {
         if (!this.continueOnFail()) throw error;

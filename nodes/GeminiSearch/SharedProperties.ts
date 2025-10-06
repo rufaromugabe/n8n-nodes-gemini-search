@@ -45,7 +45,6 @@ export const batchingOptions: INodeProperties = {
             'Input will be split in batches to throttle requests. -1 for disabled. 0 will be treated as 1.',
         },
         {
-          // eslint-disable-next-line n8n-nodes-base/node-param-display-name-miscased
           displayName: 'Batch Interval (ms)',
           name: 'batchInterval',
           type: 'number',
@@ -105,8 +104,7 @@ export const commonModelOptions: INodeProperties[] = [
       maxValue: 40,
     },
     default: 1,
-    description:
-      'Top K sampling parameter. Only included in request if set.',
+    description: 'Top K sampling parameter. Only included in request if set.',
   },
 ];
 
@@ -142,7 +140,9 @@ export const urlContextOptions: INodeProperties[] = [
 /**
  * Helper to get URL context options with operation-specific displayOptions
  */
-export const getUrlContextOptions = (operation: string[]): INodeProperties[] => [
+export const getUrlContextOptions = (
+  operation: string[],
+): INodeProperties[] => [
   {
     displayName: 'Enable URL Context Tool',
     name: 'enableUrlContext',
@@ -173,7 +173,6 @@ export const getUrlContextOptions = (operation: string[]): INodeProperties[] => 
   },
 ];
 
-
 export const organizationContextOptions: INodeProperties[] = [
   {
     displayName: 'Enable Organization Context',
@@ -201,7 +200,9 @@ export const organizationContextOptions: INodeProperties[] = [
 /**
  * Helper to get organization context options with operation-specific displayOptions
  */
-export const getOrganizationContextOptions = (operation: string[]): INodeProperties[] => [
+export const getOrganizationContextOptions = (
+  operation: string[],
+): INodeProperties[] => [
   {
     displayName: 'Enable Organization Context',
     name: 'enableOrganizationContext',
@@ -235,7 +236,9 @@ export const getOrganizationContextOptions = (operation: string[]): INodePropert
  * Common system instruction property for top-level use
  * Helper to get system instruction with operation-specific displayOptions
  */
-export const getSystemInstructionProperty = (operation: string[]): INodeProperties => ({
+export const getSystemInstructionProperty = (
+  operation: string[],
+): INodeProperties => ({
   displayName: 'System Instruction',
   name: 'systemInstruction',
   type: 'string',

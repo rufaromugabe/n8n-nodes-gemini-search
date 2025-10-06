@@ -192,7 +192,6 @@ export class GeminiSearchTool implements INodeType {
           return { outputData };
         })();
 
-        perItemPromise.catch(() => {});
         requestPromises.push(perItemPromise);
       } catch (error: any) {
         if (!this.continueOnFail()) throw error;

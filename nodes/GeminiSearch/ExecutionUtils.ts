@@ -211,8 +211,7 @@ export async function processGeminiResponse(
 
   // Add url_context_metadata to the output if it exists
   if (response.candidates?.[0]?.url_context_metadata) {
-    outputJson.urlContextMetadata =
-      response.candidates[0].url_context_metadata;
+    outputJson.urlContextMetadata = response.candidates[0].url_context_metadata;
   }
 
   // Add restricted URLs if applicable

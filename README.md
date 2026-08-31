@@ -218,7 +218,7 @@ This node requires a Google Gemini API key. You can get one from the [Google AI 
 
 ## Support
 
-For issues or feature requests, please [open an issue](https://github.com/rufaromugabe/n8n-nodes-gemini-search/issues) on GitHub.
+For issues or feature requests, please [open an issue](https://github.com/rufarorev/n8n-nodes-gemini-search/issues) on GitHub.
 
 ## License
 

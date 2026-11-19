@@ -2,7 +2,7 @@
 
 This is an n8n community node package that provides nodes to interact with Google's Gemini AI models for search and content generation capabilities.
 
-![Gemini Search Nodes](https://img.shields.io/badge/n8n-community-brightgreen) ![Version](https://img.shields.io/badge/version-1.1.16-blue)
+![Gemini Search Nodes](https://img.shields.io/badge/n8n-community-brightgreen) ![Version](https://img.shields.io/badge/version-1.2.3-blue)
 
 
 
@@ -187,6 +187,13 @@ export N8N_COMMUNITY_PACKAGES_ALLOW_TOOL_USAGE=true
 This node requires a Google Gemini API key. You can get one from the [Google AI Studio](https://ai.google.dev/).
 
 ## Changelog
+
+### v1.2.3 - Load fix and package links
+
+**Key Updates:**
+
+- **🐛 Cannot find module 'axios'**: Source URL redirect lookup now uses n8n's built-in `helpers.httpRequest` instead of the `axios` package, so the published community node loads without a missing runtime dependency ([#4](https://github.com/rufaromugabe/n8n-nodes-gemini-search/issues/4)).
+- **🔗 npm package links**: `repository`, `homepage`, and `bugs` now point at [`rufaromugabe/n8n-nodes-gemini-search`](https://github.com/rufaromugabe/n8n-nodes-gemini-search).
 
 ### v1.1.16 - Major UI/UX Improvements
 

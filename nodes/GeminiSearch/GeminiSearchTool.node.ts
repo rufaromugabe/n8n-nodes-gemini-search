@@ -29,9 +29,7 @@ export class GeminiSearchTool implements INodeType {
     defaults: {
       name: 'Gemini Search Tool',
     },
-    // @ts-expect-error - node-class-description-outputs-wrong - intentionally suppressing type error
     inputs: [{ type: 'main', required: true }],
-    // @ts-expect-error - node-class-description-outputs-wrong - intentionally suppressing type error
     outputs: [{ type: 'main', required: true }],
     usableAsTool: true,
     credentials: [

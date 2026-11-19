@@ -30,9 +30,6 @@
   "bugs": {
     "url": "https://github.com/rufaromugabe/n8n-nodes-gemini-search/issues"
   },
-  "bugs": {
-    "url": "https://github.com/rufaromugabe/n8n-nodes-gemini-search/issues"
-  },
   "main": "index.js",
   "scripts": {
     "build": "tsc && gulp build:icons",

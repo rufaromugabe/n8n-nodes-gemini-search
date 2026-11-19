@@ -2,10 +2,10 @@ import type {
   IExecuteFunctions,
   IHookFunctions,
   ILoadOptionsFunctions,
+  IRequestOptions,
   IWebhookFunctions,
 } from 'n8n-workflow';
 import { NodeApiError, NodeOperationError } from 'n8n-workflow';
-import { OptionsWithUri } from 'request-promise-native';
 
 /**
  * Utility function for sleep/delay
@@ -31,7 +31,7 @@ export async function geminiRequest(
   const apiKey = credentials.apiKey;
   const host = credentials.host || 'https://generativelanguage.googleapis.com';
 
-  const options: OptionsWithUri = {
+  const options: IRequestOptions = {
     method: 'POST',
     uri: `${host}/v1beta/models/${model}:generateContent`,
     qs: {
@@ -81,7 +81,7 @@ export async function getModels(
   const apiKey = credentials.apiKey;
   const host = credentials.host || 'https://generativelanguage.googleapis.com';
 
-  const options: OptionsWithUri = {
+  const options: IRequestOptions = {
     method: 'GET',
     uri: `${host}/v1beta/models`,
     qs: {

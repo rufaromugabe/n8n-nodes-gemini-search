@@ -1,4 +1,3 @@
-import axios from 'axios';
 import type { IExecuteFunctions } from 'n8n-workflow';
 import { geminiRequest } from './GenericFunctions';
 import {
@@ -159,31 +158,81 @@ export function extractSourceUrl(responseObj: any): string {
 }
 
 /**
+ * Resolves a redirect Location header against the current URL.
+ */
+function resolveRedirectLocation(
+  currentUrl: string,
+  location: unknown,
+): string | null {
+  const raw = Array.isArray(location) ? location[0] : location;
+  if (typeof raw !== 'string' || raw.trim() === '') {
+    return null;
+  }
+  try {
+    return new URL(raw, currentUrl).toString();
+  } catch {
+    return null;
+  }
+}
+
+/**
  * Gets the final redirected URL by following redirects
  */
-export async function getRedirectedUrl(url: string): Promise<string> {
+export async function getRedirectedUrl(
+  this: IExecuteFunctions,
+  url: string,
+): Promise<string> {
   if (!url) return '';
   try {
-    const response = await axios.head(url, {
-      maxRedirects: 10,
-      timeout: 5000,
-      validateStatus: null, // Don't throw on any status code
-      headers: {
-        'User-Agent':
-          'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
-      },
-    });
+    if (!this.helpers?.httpRequest) {
+      throw new Error('Helpers are not available!');
+    }
 
-    // Check for the final URL in multiple places
-    const finalUrl =
-      response.request?.res?.responseUrl || // Node.js response
-      response.request?.responseURL || // Browser response
-      (typeof response.request === 'object' && 'res' in response.request
-        ? response.request.res.headers?.location
-        : null) || // Check location header
-      url; // Fallback to original URL
+    const userAgent =
+      'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36';
 
-    return finalUrl;
+    let currentUrl = url;
+    for (let i = 0; i < 10; i++) {
+      const response = await this.helpers.httpRequest({
+        method: 'HEAD',
+        url: currentUrl,
+        headers: {
+          'User-Agent': userAgent,
+        },
+        timeout: 5000,
+        disableFollowRedirect: true,
+        ignoreHttpStatusErrors: true,
+        returnFullResponse: true,
+      });
+
+      const statusCode =
+        typeof response === 'object' && response !== null
+          ? (response as { statusCode?: number }).statusCode
+          : undefined;
+      const headers =
+        typeof response === 'object' && response !== null
+          ? (response as { headers?: Record<string, unknown> }).headers
+          : undefined;
+      const location = headers?.location ?? headers?.Location;
+
+      if (
+        typeof statusCode === 'number' &&
+        statusCode >= 300 &&
+        statusCode < 400
+      ) {
+        const nextUrl = resolveRedirectLocation(currentUrl, location);
+        if (!nextUrl) {
+          return currentUrl;
+        }
+        currentUrl = nextUrl;
+        continue;
+      }
+
+      return currentUrl;
+    }
+
+    // Match axios maxRedirects: 10 — exceeding that is treated as an error
+    throw new Error('Maximum number of redirects exceeded');
   } catch (error: any) {
     console.error(`Error fetching redirected URL: ${error.message}`);
     return url;
@@ -194,6 +243,7 @@ export async function getRedirectedUrl(url: string): Promise<string> {
  * Processes a Gemini API response and formats the output
  */
 export async function processGeminiResponse(
+  this: IExecuteFunctions,
   response: any,
   options: IResponseProcessingOptions = {},
 ): Promise<IGeminiOutput> {
@@ -227,7 +277,10 @@ export async function processGeminiResponse(
     // Get redirected URL if source URL exists
     if (sourceUrl) {
       try {
-        outputJson.redirectedSourceUrl = await getRedirectedUrl(sourceUrl);
+        outputJson.redirectedSourceUrl = await getRedirectedUrl.call(
+          this,
+          sourceUrl,
+        );
       } catch (error: any) {
         outputJson.redirectedSourceUrl = sourceUrl;
         outputJson.redirectError = error.message;
@@ -257,5 +310,5 @@ export async function executeGeminiRequest(
     requestOptions.model,
     requestBody,
   );
-  return await processGeminiResponse(response, responseOptions);
+  return await processGeminiResponse.call(context, response, responseOptions);
 }

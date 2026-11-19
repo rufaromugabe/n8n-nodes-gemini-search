@@ -29,8 +29,8 @@ export class GeminiSearchTool implements INodeType {
     defaults: {
       name: 'Gemini Search Tool',
     },
-    inputs: [{ type: 'main', required: true }],
-    outputs: [{ type: 'main', required: true }],
+    inputs: ['main'],
+    outputs: ['main'],
     usableAsTool: true,
     credentials: [
       {
@@ -65,7 +65,7 @@ export class GeminiSearchTool implements INodeType {
         ],
       },
     ],
-  };
+  } as INodeTypeDescription;
 
   methods = {
     loadOptions: {

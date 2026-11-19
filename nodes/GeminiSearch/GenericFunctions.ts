@@ -1,8 +1,9 @@
 import type {
+  IDataObject,
   IExecuteFunctions,
   IHookFunctions,
+  IHttpRequestOptions,
   ILoadOptionsFunctions,
-  IRequestOptions,
   IWebhookFunctions,
 } from 'n8n-workflow';
 import { NodeApiError, NodeOperationError } from 'n8n-workflow';
@@ -31,11 +32,11 @@ export async function geminiRequest(
   const apiKey = credentials.apiKey;
   const host = credentials.host || 'https://generativelanguage.googleapis.com';
 
-  const options: IRequestOptions = {
+  const options: IHttpRequestOptions = {
     method: 'POST',
-    uri: `${host}/v1beta/models/${model}:generateContent`,
+    url: `${host}/v1beta/models/${model}:generateContent`,
     qs: {
-      key: apiKey,
+      key: apiKey as string,
     },
     headers: {
       'Content-Type': 'application/json',
@@ -45,14 +46,13 @@ export async function geminiRequest(
   };
 
   try {
-    if (!this.helpers) {
+    if (!this.helpers?.httpRequest) {
       throw new NodeOperationError(
         this.getNode(),
         'Helpers are not available!',
       );
     }
-    // Replace non-null assertion with conditional check
-    const response = await this.helpers.request?.(options);
+    const response = await this.helpers.httpRequest(options);
     if (!response) {
       throw new NodeOperationError(
         this.getNode(),
@@ -81,35 +81,38 @@ export async function getModels(
   const apiKey = credentials.apiKey;
   const host = credentials.host || 'https://generativelanguage.googleapis.com';
 
-  const options: IRequestOptions = {
+  const options: IHttpRequestOptions = {
     method: 'GET',
-    uri: `${host}/v1beta/models`,
+    url: `${host}/v1beta/models`,
     qs: {
-      key: apiKey,
+      key: apiKey as string,
     },
     json: true,
   };
 
   try {
-    if (!this.helpers) {
+    if (!this.helpers?.httpRequest) {
       throw new NodeOperationError(
         this.getNode(),
         'Helpers are not available!',
       );
     }
-    const response = await this.helpers.request?.(options);
-    if (!response || !response.models) {
+    const response = (await this.helpers.httpRequest(options)) as IDataObject;
+    if (!response?.models) {
       throw new NodeOperationError(
         this.getNode(),
         'No response or models from API request',
       );
     }
     // Filter for models that support 'generateContent' and return their names
-    return response.models
-      .filter((model: any) =>
-        model.supportedGenerationMethods?.includes('generateContent'),
+    const models = response.models as IDataObject[];
+    return models
+      .filter((model) =>
+        (model.supportedGenerationMethods as string[] | undefined)?.includes(
+          'generateContent',
+        ),
       )
-      .map((model: any) => model.name.replace('models/', ''));
+      .map((model) => String(model.name).replace('models/', ''));
   } catch (error) {
     throw new NodeApiError(this.getNode(), error);
   }
